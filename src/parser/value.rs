@@ -7,18 +7,19 @@ use nom::branch::alt;
 use nom::sequence::tuple;
 
 use crate::data::{Value, NamedValue};
-use crate::parser::whitespace::ws;
 
 use crate::parser::number::decimal;
 use crate::parser::string::parse_string;
 
+use super::whitespace::{ws_before, ws_after};
+
 pub(crate) fn value(i: &str) -> IResult<&str, Value> {
-    alt((int_value, real_value, string_value, nan_value))(i)
+    alt((nan_value, real_value, int_value, string_value))(i)
 }
 
 
 pub(crate) fn named_value(i: &str) -> IResult<&str, NamedValue> {
-    let (i, (name, _, value)) = tuple((ws(parse_string), space1, ws(value)))(i)?;
+    let (i, (name, _, value)) = tuple((ws_before(parse_string), space1, ws_after(value)))(i)?;
 
     Ok((i, NamedValue { name, value }))
 }
@@ -47,3 +48,31 @@ fn nan_value(i: &str) -> IResult<&str, Value> {
     Ok((i, Value::NaN))
 }
 
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_named_value() {
+        assert_eq!(named_value(r#""PSFversion" "1.00""#), Ok(("", NamedValue {
+            name: "PSFversion".to_string(),
+            value: Value::String("1.00".to_string()),
+        })));
+
+        assert_eq!(named_value(r#""start" 0.00"#), Ok(("", NamedValue {
+            name: "start".to_string(),
+            value: Value::Real(0f64),
+        })));
+
+        assert_eq!(named_value(r#""test" 2"#), Ok(("", NamedValue {
+            name: "test".to_string(),
+            value: Value::Int(2),
+        })));
+
+        assert_eq!(named_value(r#""nan value" nan"#), Ok(("", NamedValue {
+            name: "nan value".to_string(),
+            value: Value::NaN,
+        })));
+    }
+}
