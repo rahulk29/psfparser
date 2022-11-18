@@ -1,7 +1,7 @@
-use pest::Parser;
 use pest::iterators::Pair;
+use pest::Parser;
 
-use crate::data::{Psf, Header, NamedValue, Value, Types, Sweep};
+use crate::data::{Header, Kind, NamedValue, Prop, Psf, Sweep, Trace, Types, Value};
 use crate::Result;
 
 #[cfg(test)]
@@ -11,9 +11,10 @@ mod tests;
 #[grammar = "psf_ascii.pest"]
 pub struct PsfAsciiParser;
 
-
 pub fn parse(input: &str) -> Result<Psf> {
-    let input = PsfAsciiParser::parse(Rule::psf_ascii, input)?.next().unwrap();
+    let input = PsfAsciiParser::parse(Rule::psf_ascii, input)?
+        .next()
+        .unwrap();
     parse_psf_inner(input)
 }
 
@@ -22,19 +23,21 @@ fn parse_psf_inner(input: Pair<Rule>) -> Result<Psf> {
     let mut pairs = input.into_inner();
     let header = parse_header(pairs.next().unwrap())?;
 
-    let (types, sweeps) = if let Some(input) = pairs.next() {
+    let (types, sweeps, traces) = if let Some(input) = pairs.next() {
         let mut input = input.into_inner();
         let types = parse_types(input.next().unwrap())?;
-        let sweeps = parse_sweeps(input.next().unwrap())?;
-        (types, sweeps)
+        let sweeps = parse_sweeps(pairs.next().unwrap().into_inner().next().unwrap())?;
+        let traces = parse_traces(pairs.next().unwrap().into_inner().next().unwrap())?;
+        (types, sweeps, traces)
     } else {
-        (Types {}, Vec::new())
+        (Types {}, Vec::new(), Vec::new())
     };
 
     Ok(Psf {
         header,
         types,
         sweeps,
+        traces,
     })
 }
 
@@ -43,15 +46,15 @@ fn parse_header(input: Pair<Rule>) -> Result<Header> {
     let mut pairs = input.into_inner();
     let named_values = pairs.next().unwrap();
     let values = parse_named_values(named_values)?;
-    Ok(Header {
-        values,
-    })
+    Ok(Header { values })
 }
 
 fn parse_named_values(input: Pair<Rule>) -> Result<Vec<NamedValue>> {
     assert_eq!(input.as_rule(), Rule::named_values);
     let pairs = input.into_inner();
-    Ok(pairs.map(|p| parse_named_value(p)).collect::<Result<Vec<_>>>()?)
+    Ok(pairs
+        .map(|p| parse_named_value(p))
+        .collect::<Result<Vec<_>>>()?)
 }
 
 fn parse_named_value(input: Pair<Rule>) -> Result<NamedValue> {
@@ -66,17 +69,17 @@ fn parse_named_value(input: Pair<Rule>) -> Result<NamedValue> {
 
 fn parse_value(input: Pair<Rule>) -> Result<Value> {
     Ok(match input.as_rule() {
-        Rule::string => Value::String(parse_string(input)?),
+        Rule::string => Value::Str(parse_string(input)?),
         Rule::integer => Value::Int(parse_integer(input)?),
         Rule::real => Value::Real(parse_real(input)?),
         Rule::nan => Value::NaN,
-        _ => unreachable!("unexpected value rule")
+        _ => unreachable!("unexpected value rule"),
     })
 }
 
-fn parse_string(input: Pair<Rule>) -> Result<String> {
+fn parse_string(input: Pair<Rule>) -> Result<&str> {
     assert_eq!(input.as_rule(), Rule::string);
-    Ok(String::from(input.into_inner().next().unwrap().as_str()))
+    Ok(input.into_inner().next().unwrap().as_str())
 }
 
 fn parse_integer(input: Pair<Rule>) -> Result<i64> {
@@ -90,7 +93,7 @@ fn parse_real(input: Pair<Rule>) -> Result<f64> {
 }
 
 fn parse_types(input: Pair<Rule>) -> Result<Types> {
-    assert_eq!(input.as_rule(), Rule::type_section);
+    assert_eq!(input.as_rule(), Rule::types);
     Ok(Types {})
 }
 
@@ -105,9 +108,72 @@ fn parse_sweep(input: Pair<Rule>) -> Result<Sweep> {
     let mut input = input.into_inner();
     let name = parse_string(input.next().unwrap())?;
     let sweep_type = parse_string(input.next().unwrap())?;
+    let kinds = parse_kinds(input.next().unwrap())?;
     Ok(Sweep {
         name,
         sweep_type,
-        kinds: vec![],
+        kinds,
     })
+}
+
+fn parse_kinds(input: Pair<Rule>) -> Result<Vec<Kind>> {
+    assert_eq!(input.as_rule(), Rule::kinds);
+    let pairs = input.into_inner();
+    Ok(pairs.map(parse_kind).collect::<Result<Vec<_>>>()?)
+}
+
+fn parse_kind(input: Pair<Rule>) -> Result<Kind> {
+    assert_eq!(input.as_rule(), Rule::kind);
+    let input = input.into_inner().next().unwrap();
+
+    Ok(match input.as_rule() {
+        Rule::t_float => Kind::Float,
+        Rule::t_double => Kind::Double,
+        Rule::t_complex => Kind::Complex,
+        Rule::t_int => Kind::Int,
+        Rule::t_byte => Kind::Byte,
+        Rule::t_long => Kind::Long,
+        Rule::t_string => Kind::String,
+        Rule::prop => Kind::Prop(parse_prop(input)?),
+        _ => panic!("Unexpected kind"),
+    })
+}
+
+fn parse_prop(input: Pair<Rule>) -> Result<Prop> {
+    assert_eq!(input.as_rule(), Rule::prop);
+    let named_values = input.into_inner().next().unwrap();
+    let values = parse_named_values(named_values)?;
+    Ok(Prop { values })
+}
+
+fn parse_traces(input: Pair<Rule>) -> Result<Vec<Trace>> {
+    assert_eq!(input.as_rule(), Rule::traces);
+    let pairs = input.into_inner();
+    Ok(pairs.map(parse_trace).collect::<Result<Vec<_>>>()?)
+}
+
+fn parse_trace(input: Pair<Rule>) -> Result<Trace> {
+    assert_eq!(input.as_rule(), Rule::trace);
+    let input = input.into_inner().next().unwrap();
+    Ok(match input.as_rule() {
+        Rule::trace_group => parse_trace_group(input)?,
+        Rule::trace_with_props | Rule::simple_trace => parse_simple_trace(input)?,
+        _ => panic!("Unexpected trace format"),
+    })
+}
+
+fn parse_trace_group(input: Pair<Rule>) -> Result<Trace> {
+    assert_eq!(input.as_rule(), Rule::trace_group);
+    let mut pairs = input.into_inner();
+    let name = parse_string(pairs.next().unwrap())?;
+    let count = parse_integer(pairs.next().unwrap())?;
+    Ok(Trace::Group { name, count })
+}
+
+fn parse_simple_trace(input: Pair<Rule>) -> Result<Trace> {
+    assert!(input.as_rule() == Rule::simple_trace || input.as_rule() == Rule::trace_with_props);
+    let mut pairs = input.into_inner();
+    let name = parse_string(pairs.next().unwrap())?;
+    let units = parse_string(pairs.next().unwrap())?;
+    Ok(Trace::Signal { name, units })
 }

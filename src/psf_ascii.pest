@@ -27,11 +27,18 @@ types = { (type_decl)* }
 
 type_decl = { string ~ kinds }
 
-kinds = { (kind)+ }
+kinds = { (kind)* }
 
 kind = {
-    ("FLOAT" | "DOUBLE" | "COMPLEX" | "INT" | "BYTE" | "LONG" | "STRING" | array | struct_decl | prop | star)
+    (t_float| t_double | t_complex | t_int | t_byte | t_long | t_string | array | struct_decl | prop | star)
 }
+t_float = { "FLOAT" }
+t_double = { "DOUBLE" }
+t_complex = { "COMPLEX" }
+t_int = { "INT" }
+t_byte = { "BYTE" }
+t_long = { "LONG" }
+t_string = { "STRING" }
 
 struct_decl = { "STRUCT" ~ "(" ~ types ~ ")" }
 array = { "ARRAY" ~ "(" ~ star ~ ")" }
@@ -43,15 +50,19 @@ sweeps = { (sweep)* }
 sweep = { string ~ string ~ kinds }
 
 trace_section = { "TRACE" ~ traces }
-traces = { (trace)+ }
+traces = { (trace)* }
 trace = { 
-    named_value
-    | (string ~ "GROUP" ~ integer)
-    | (named_value ~ prop)
+    trace_group
+    | trace_with_props
+    | simple_trace
 }
 
+simple_trace = { string ~ string }
+trace_group = { string ~ "GROUP" ~ integer }
+trace_with_props = { string ~ string ~ prop }
+
 value_section = { "VALUE" ~ values }
-values = { (signal_value)+ }
+values = { (signal_value)* }
 signal_value = {
     (string ~ numbers)
     | (string ~ string ~ numbers)
@@ -60,11 +71,11 @@ signal_value = {
 numbers = _{ simple_numbers | composite_numbers }
 simple_numbers = { (simple_number)+ }
 simple_number = _{
-    integer
-    | real
-    | (real ~ prop)
+    (nan ~ prop)
     | nan
-    | (nan ~ prop)
+    | (real ~ prop)
+    | real
+    | integer
 }
 composite_numbers = { (composite_number)+ }
 composite_number = {

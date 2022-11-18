@@ -1,42 +1,42 @@
 #[derive(Debug, Clone, PartialEq)]
-pub struct Psf {
-    pub header: Header,
+pub struct Psf<'a> {
+    pub header: Header<'a>,
     pub types: Types,
-    pub sweeps: Vec<Sweep>,
+    pub sweeps: Vec<Sweep<'a>>,
+    pub traces: Vec<Trace<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Header {
-    pub values: Vec<NamedValue>,
+pub struct Header<'a> {
+    pub values: Vec<NamedValue<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct NamedValue {
-    pub name: String,
-    pub value: Value,
+pub struct NamedValue<'a> {
+    pub name: &'a str,
+    pub value: Value<'a>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Value {
+pub enum Value<'a> {
     Int(i64),
     Real(f64),
-    String(String),
+    Str(&'a str),
     NaN,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Types {
+pub struct Types {}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Sweep<'a> {
+    pub name: &'a str,
+    pub sweep_type: &'a str,
+    pub kinds: Vec<Kind<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Sweep {
-    pub name: String,
-    pub sweep_type: String,
-    pub kinds: Vec<Kind>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Kind {
+pub enum Kind<'a> {
     Float,
     Double,
     Complex,
@@ -46,16 +46,20 @@ pub enum Kind {
     String,
     Array,
     Struct,
-    Prop,
+    Prop(Prop<'a>),
     Star,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Traces {
-
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Trace<'a> {
+    Group { name: &'a str, count: i64 },
+    Signal { name: &'a str, units: &'a str },
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Values {
+pub struct Values {}
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Prop<'a> {
+    pub values: Vec<NamedValue<'a>>,
 }
