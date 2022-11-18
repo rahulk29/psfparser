@@ -23,9 +23,9 @@ type_section = {
     ~ types
 }
 
-types = { (type_decl)* }
+types = { (type_def)* }
 
-type_decl = { string ~ kinds }
+type_def = { string ~ kinds }
 
 kinds = { (kind)* }
 
@@ -62,11 +62,12 @@ trace_group = { string ~ "GROUP" ~ integer }
 trace_with_props = { string ~ string ~ prop }
 
 value_section = { "VALUE" ~ values }
-values = { (signal_value)* }
+values = _{ (signal_value)* }
 signal_value = {
-    (string ~ numbers)
-    | (string ~ string ~ numbers)
+    signal_value_typed | signal_value_simple
 }
+signal_value_simple = { string ~ numbers }
+signal_value_typed = { string ~ string ~ numbers }
 
 numbers = _{ simple_numbers | composite_numbers }
 simple_numbers = { (simple_number)+ }
@@ -79,8 +80,8 @@ simple_number = _{
 }
 composite_numbers = { (composite_number)+ }
 composite_number = {
-    ("(" ~ simple_numbers ~ ")")
-    | ("(" ~ simple_numbers ~ ")" ~ prop)
+    ("(" ~ simple_numbers ~ ")" ~ prop)
+    | ("(" ~ simple_numbers ~ ")")
 }
 
 

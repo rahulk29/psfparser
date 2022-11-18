@@ -1,9 +1,12 @@
 use pest::iterators::Pair;
 use pest::Parser;
 
-use crate::data::{Header, Kind, NamedValue, Prop, Psf, Sweep, Trace, Types, Value};
+use crate::parser::ast::{Header, Kind, NamedValue, Prop, Psf, SignalValues, Sweep, Trace, Value};
 use crate::Result;
 
+use self::ast::TypeDef;
+
+pub mod ast;
 #[cfg(test)]
 mod tests;
 
@@ -23,14 +26,15 @@ fn parse_psf_inner(input: Pair<Rule>) -> Result<Psf> {
     let mut pairs = input.into_inner();
     let header = parse_header(pairs.next().unwrap())?;
 
-    let (types, sweeps, traces) = if let Some(input) = pairs.next() {
+    let (types, sweeps, traces, values) = if let Some(input) = pairs.next() {
         let mut input = input.into_inner();
         let types = parse_types(input.next().unwrap())?;
         let sweeps = parse_sweeps(pairs.next().unwrap().into_inner().next().unwrap())?;
         let traces = parse_traces(pairs.next().unwrap().into_inner().next().unwrap())?;
-        (types, sweeps, traces)
+        let values = parse_value_section(pairs.next().unwrap())?;
+        (types, sweeps, traces, values)
     } else {
-        (Types {}, Vec::new(), Vec::new())
+        (Vec::new(), Vec::new(), Vec::new(), Vec::new())
     };
 
     Ok(Psf {
@@ -38,6 +42,7 @@ fn parse_psf_inner(input: Pair<Rule>) -> Result<Psf> {
         types,
         sweeps,
         traces,
+        values,
     })
 }
 
@@ -92,9 +97,19 @@ fn parse_real(input: Pair<Rule>) -> Result<f64> {
     Ok(input.as_str().parse()?)
 }
 
-fn parse_types(input: Pair<Rule>) -> Result<Types> {
+fn parse_types(input: Pair<Rule>) -> Result<Vec<TypeDef>> {
     assert_eq!(input.as_rule(), Rule::types);
-    Ok(Types {})
+    let pairs = input.into_inner();
+    Ok(pairs.map(parse_type).collect::<Result<Vec<_>>>()?)
+}
+
+fn parse_type(input: Pair<Rule>) -> Result<TypeDef> {
+    assert_eq!(input.as_rule(), Rule::type_def);
+    let mut input = input.into_inner();
+    let name = parse_string(input.next().unwrap())?;
+    let kinds = parse_kinds(input.next().unwrap())?;
+
+    Ok(TypeDef { name, kinds })
 }
 
 fn parse_sweeps(input: Pair<Rule>) -> Result<Vec<Sweep>> {
@@ -176,4 +191,33 @@ fn parse_simple_trace(input: Pair<Rule>) -> Result<Trace> {
     let name = parse_string(pairs.next().unwrap())?;
     let units = parse_string(pairs.next().unwrap())?;
     Ok(Trace::Signal { name, units })
+}
+
+fn parse_value_section(input: Pair<Rule>) -> Result<Vec<SignalValues>> {
+    assert_eq!(input.as_rule(), Rule::value_section);
+    let pairs = input.into_inner();
+    Ok(pairs.map(parse_signal_value).collect::<Result<Vec<_>>>()?)
+}
+
+fn parse_signal_value(input: Pair<Rule>) -> Result<SignalValues> {
+    assert_eq!(input.as_rule(), Rule::signal_value);
+    let input = input.into_inner().next().unwrap();
+    Ok(match input.as_rule() {
+        Rule::signal_value_simple => parse_signal_value_simple(input)?,
+        _ => panic!("Unexpected signal value"),
+    })
+}
+
+fn parse_signal_value_simple(input: Pair<Rule>) -> Result<SignalValues> {
+    assert_eq!(input.as_rule(), Rule::signal_value_simple);
+    let mut input = input.into_inner();
+    let signal = parse_string(input.next().unwrap())?;
+    let values = parse_numbers(input.next().unwrap())?;
+    Ok(SignalValues { signal, values })
+}
+
+fn parse_numbers(input: Pair<Rule>) -> Result<Vec<f64>> {
+    assert_eq!(input.as_rule(), Rule::simple_numbers);
+    let pairs = input.into_inner();
+    Ok(pairs.map(parse_real).collect::<Result<Vec<_>>>()?)
 }

@@ -1,14 +1,21 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct Psf<'a> {
     pub header: Header<'a>,
-    pub types: Types,
+    pub types: Vec<TypeDef<'a>>,
     pub sweeps: Vec<Sweep<'a>>,
     pub traces: Vec<Trace<'a>>,
+    pub values: Vec<SignalValues<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Header<'a> {
     pub values: Vec<NamedValue<'a>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TypeDef<'a> {
+    pub name: &'a str,
+    pub kinds: Vec<Kind<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,9 +31,6 @@ pub enum Value<'a> {
     Str(&'a str),
     NaN,
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Types {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sweep<'a> {
@@ -45,7 +49,7 @@ pub enum Kind<'a> {
     Long,
     String,
     Array,
-    Struct,
+    Struct(Vec<TypeDef<'a>>),
     Prop(Prop<'a>),
     Star,
 }
@@ -57,9 +61,12 @@ pub enum Trace<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Values {}
-
-#[derive(Debug, Clone, PartialEq)]
 pub struct Prop<'a> {
     pub values: Vec<NamedValue<'a>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SignalValues<'a> {
+    pub signal: &'a str,
+    pub values: Vec<f64>,
 }

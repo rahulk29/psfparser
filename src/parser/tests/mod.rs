@@ -41,7 +41,7 @@ fn basic() {
                     },
                 ]
             },
-            types: Types {},
+            types: Vec::new(),
             sweeps: Vec::new(),
             traces: vec![
                 Trace::Group {
@@ -53,6 +53,7 @@ fn basic() {
                     units: "V"
                 }
             ],
+            values: Vec::new(),
         }
     )
 }

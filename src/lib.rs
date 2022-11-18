@@ -1,4 +1,3 @@
-pub mod data;
 pub mod parser;
 
 pub type Result<T> = anyhow::Result<T>;
