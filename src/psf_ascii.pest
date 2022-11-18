@@ -1,11 +1,9 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 
-psf_ascii = {
+psf_ascii = _{ SOI ~ psf_ascii_inner ~ EOI }
+psf_ascii_inner = {
     header_section
-    ~ type_section
-    ~ sweep_section
-    ~ trace_section
-    ~ value_section
+    ~ (type_section ~ sweep_section ~ trace_section ~ value_section)?
     ~ end
 }
 
@@ -16,7 +14,7 @@ header_section = {
 
 named_values = { (named_value)* }
 named_value = { string ~ value }
-value = _{ string | integer | real_value }
+value = _{ string | real_value | integer }
 real_value = _{ real | nan }
 nan = { "nan" | "NaN" }
 
@@ -75,7 +73,7 @@ composite_number = {
 }
 
 
-end = { "END" }
+end = _{ "END" }
 
 
 real = @{
