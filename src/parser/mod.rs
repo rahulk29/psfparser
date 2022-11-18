@@ -1,7 +1,7 @@
 use pest::iterators::Pair;
 use pest::Parser;
 
-use crate::parser::ast::{Header, Kind, NamedValue, Prop, Psf, SignalValues, Sweep, Trace, Value};
+use crate::parser::ast::{Header, Kind, NamedValue, Prop, PsfAst, SignalValues, Sweep, Trace, Value};
 use crate::Result;
 
 use self::ast::TypeDef;
@@ -14,14 +14,14 @@ mod tests;
 #[grammar = "psf_ascii.pest"]
 pub struct PsfAsciiParser;
 
-pub fn parse(input: &str) -> Result<Psf> {
+pub fn parse(input: &str) -> Result<PsfAst> {
     let input = PsfAsciiParser::parse(Rule::psf_ascii, input)?
         .next()
         .unwrap();
     parse_psf_inner(input)
 }
 
-fn parse_psf_inner(input: Pair<Rule>) -> Result<Psf> {
+fn parse_psf_inner(input: Pair<Rule>) -> Result<PsfAst> {
     assert_eq!(input.as_rule(), Rule::psf_ascii_inner);
     let mut pairs = input.into_inner();
     let header = parse_header(pairs.next().unwrap())?;
@@ -37,7 +37,7 @@ fn parse_psf_inner(input: Pair<Rule>) -> Result<Psf> {
         (Vec::new(), Vec::new(), Vec::new(), Vec::new())
     };
 
-    Ok(Psf {
+    Ok(PsfAst {
         header,
         types,
         sweeps,

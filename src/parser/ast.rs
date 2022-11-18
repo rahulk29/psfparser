@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, PartialEq)]
-pub struct Psf<'a> {
+pub struct PsfAst<'a> {
     pub header: Header<'a>,
     pub types: Vec<TypeDef<'a>>,
     pub sweeps: Vec<Sweep<'a>>,

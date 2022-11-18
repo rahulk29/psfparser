@@ -20,7 +20,7 @@ fn basic() {
     let psf = parse(input).unwrap();
     assert_eq!(
         psf,
-        Psf {
+        PsfAst {
             header: Header {
                 values: vec![
                     NamedValue {
