@@ -57,9 +57,7 @@ fn parse_header(input: Pair<Rule>) -> Result<Header> {
 fn parse_named_values(input: Pair<Rule>) -> Result<Vec<NamedValue>> {
     assert_eq!(input.as_rule(), Rule::named_values);
     let pairs = input.into_inner();
-    Ok(pairs
-        .map(|p| parse_named_value(p))
-        .collect::<Result<Vec<_>>>()?)
+    pairs.map(parse_named_value).collect::<Result<Vec<_>>>()
 }
 
 fn parse_named_value(input: Pair<Rule>) -> Result<NamedValue> {
@@ -100,7 +98,7 @@ fn parse_real(input: Pair<Rule>) -> Result<f64> {
 fn parse_types(input: Pair<Rule>) -> Result<Vec<TypeDef>> {
     assert_eq!(input.as_rule(), Rule::types);
     let pairs = input.into_inner();
-    Ok(pairs.map(parse_type).collect::<Result<Vec<_>>>()?)
+    pairs.map(parse_type).collect::<Result<Vec<_>>>()
 }
 
 fn parse_type(input: Pair<Rule>) -> Result<TypeDef> {
@@ -115,7 +113,7 @@ fn parse_type(input: Pair<Rule>) -> Result<TypeDef> {
 fn parse_sweeps(input: Pair<Rule>) -> Result<Vec<Sweep>> {
     assert_eq!(input.as_rule(), Rule::sweeps);
     let pairs = input.into_inner();
-    Ok(pairs.map(parse_sweep).collect::<Result<Vec<_>>>()?)
+    pairs.map(parse_sweep).collect::<Result<Vec<_>>>()
 }
 
 fn parse_sweep(input: Pair<Rule>) -> Result<Sweep> {
@@ -134,7 +132,7 @@ fn parse_sweep(input: Pair<Rule>) -> Result<Sweep> {
 fn parse_kinds(input: Pair<Rule>) -> Result<Vec<Kind>> {
     assert_eq!(input.as_rule(), Rule::kinds);
     let pairs = input.into_inner();
-    Ok(pairs.map(parse_kind).collect::<Result<Vec<_>>>()?)
+    pairs.map(parse_kind).collect::<Result<Vec<_>>>()
 }
 
 fn parse_kind(input: Pair<Rule>) -> Result<Kind> {
@@ -164,7 +162,7 @@ fn parse_prop(input: Pair<Rule>) -> Result<Prop> {
 fn parse_traces(input: Pair<Rule>) -> Result<Vec<Trace>> {
     assert_eq!(input.as_rule(), Rule::traces);
     let pairs = input.into_inner();
-    Ok(pairs.map(parse_trace).collect::<Result<Vec<_>>>()?)
+    pairs.map(parse_trace).collect::<Result<Vec<_>>>()
 }
 
 fn parse_trace(input: Pair<Rule>) -> Result<Trace> {
@@ -196,7 +194,7 @@ fn parse_simple_trace(input: Pair<Rule>) -> Result<Trace> {
 fn parse_value_section(input: Pair<Rule>) -> Result<Vec<SignalValues>> {
     assert_eq!(input.as_rule(), Rule::value_section);
     let pairs = input.into_inner();
-    Ok(pairs.map(parse_signal_value).collect::<Result<Vec<_>>>()?)
+    pairs.map(parse_signal_value).collect::<Result<Vec<_>>>()
 }
 
 fn parse_signal_value(input: Pair<Rule>) -> Result<SignalValues> {
@@ -219,5 +217,5 @@ fn parse_signal_value_simple(input: Pair<Rule>) -> Result<SignalValues> {
 fn parse_numbers(input: Pair<Rule>) -> Result<Vec<f64>> {
     assert_eq!(input.as_rule(), Rule::simple_numbers);
     let pairs = input.into_inner();
-    Ok(pairs.map(parse_real).collect::<Result<Vec<_>>>()?)
+    pairs.map(parse_real).collect::<Result<Vec<_>>>()
 }
