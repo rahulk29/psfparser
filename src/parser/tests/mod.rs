@@ -1,4 +1,5 @@
-use super::*;
+use crate::parser::frontend::parse;
+use crate::parser::ast::*;
 
 #[test]
 fn basic() {
