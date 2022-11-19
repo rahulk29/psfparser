@@ -61,14 +61,26 @@ fn basic() {
     )
 }
 
-static TRAN_EXAMPLE_PSF: &str = include_str!(concat!(
+static TRAN_EXAMPLE1_PSF: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/examples/timeSweep.tran.tran"
+    "/examples/timeSweep1.tran.tran"
+));
+
+static TRAN_EXAMPLE2_PSF: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/examples/timeSweep2.tran.tran"
 ));
 
 #[test]
-fn parses_transient() {
-    let ast = parse(TRAN_EXAMPLE_PSF).expect("Failed to parse transient PSF file");
+fn parses_transient_1() {
+    let ast = parse(TRAN_EXAMPLE1_PSF).expect("Failed to parse transient PSF file");
     let data = TransientData::from_ast(&ast);
     assert_eq!(data.signals.len(), 17);
+}
+
+#[test]
+fn parses_transient_2() {
+    let ast = parse(TRAN_EXAMPLE2_PSF).expect("Failed to parse transient PSF file");
+    let data = TransientData::from_ast(&ast);
+    assert_eq!(data.signals.len(), 41);
 }
