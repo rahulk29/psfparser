@@ -52,7 +52,7 @@ impl TransientData {
     }
 
     /// Gets the index into the data arrays
-    /// corresponding to the time just before `t`.
+    /// corresponding to the latest time less than or equal to `t`.
     pub fn idx_before_time(&self, t: f64) -> Option<usize> {
         bin_search_before(self.signal(&self.time).unwrap(), t)
     }
@@ -71,13 +71,14 @@ fn bin_search_before(data: &[f64], target: f64) -> Option<usize> {
     let mut ans = None;
     let mut lo = 0usize;
     let mut hi = data.len() - 1;
+    let mut x;
     while lo < hi {
         let mid = (lo + hi) / 2;
-        let x = data[mid];
+        x = data[mid];
         match target.total_cmp(&x) {
-            Ordering::Less => hi = mid,
+            Ordering::Less => hi = mid - 1,
             Ordering::Greater => {
-                lo = mid;
+                lo = mid + 1;
                 ans = Some(mid)
             }
             Ordering::Equal => return Some(mid),
