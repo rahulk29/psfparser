@@ -1,9 +1,11 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use super::ast::{PsfAst, Trace};
 
 pub struct TransientData {
     pub signals: HashMap<String, Vec<f64>>,
+    pub time: String,
 }
 
 impl TransientData {
@@ -43,6 +45,44 @@ impl TransientData {
             }
         }
 
-        Self { signals }
+        Self {
+            signals,
+            time: "time".to_string(),
+        }
     }
+
+    /// Gets the index into the data arrays
+    /// corresponding to the time just before `t`.
+    pub fn idx_before_time(&self, t: f64) -> Option<usize> {
+        bin_search_before(self.signal(&self.time).unwrap(), t)
+    }
+
+    #[inline]
+    pub fn signal(&self, name: &str) -> Option<&Vec<f64>> {
+        self.signals.get(name)
+    }
+}
+
+fn bin_search_before(data: &[f64], target: f64) -> Option<usize> {
+    if data.is_empty() {
+        return None;
+    }
+
+    let mut ans = None;
+    let mut lo = 0usize;
+    let mut hi = data.len() - 1;
+    while lo < hi {
+        let mid = (lo + hi) / 2;
+        let x = data[mid];
+        match target.total_cmp(&x) {
+            Ordering::Less => hi = mid,
+            Ordering::Greater => {
+                lo = mid;
+                ans = Some(mid)
+            }
+            Ordering::Equal => return Some(mid),
+        }
+    }
+
+    ans
 }
