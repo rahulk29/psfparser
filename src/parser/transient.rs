@@ -17,17 +17,17 @@ impl TransientData {
         while i < ast.traces.len() {
             match ast.traces[i] {
                 Trace::Group { name: group, count } => {
-                    assert!(count >= 0);
+                    debug_assert!(count >= 0);
                     let count = count as usize;
                     for j in 1..=count {
-                        if let Trace::Signal { name, .. } = ast.traces[i+j] {
+                        if let Trace::Signal { name, .. } = ast.traces[i + j] {
                             groups.insert(group, name);
                         } else {
                             panic!("Expected signal; found group");
                         }
                     }
                     i += count + 1;
-                },
+                }
                 Trace::Signal { name, .. } => {
                     groups.insert(name, name);
                     i += 1;
@@ -35,11 +35,10 @@ impl TransientData {
             }
         }
 
-        assert_eq!(groups.insert("time", "time"), None);
+        groups.insert("time", "time");
         let mut signals = HashMap::<String, Vec<f64>>::new();
         for v in ast.values.iter() {
-            println!("signal = {:?}", v.signal);
-            assert_eq!(v.values.len(), 1);
+            debug_assert_eq!(v.values.len(), 1);
             if let Some(lst) = signals.get_mut(groups[v.signal]) {
                 lst.push(v.values[0]);
             } else {
