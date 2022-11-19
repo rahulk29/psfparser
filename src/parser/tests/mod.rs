@@ -1,5 +1,7 @@
-use crate::parser::frontend::parse;
 use crate::parser::ast::*;
+use crate::parser::frontend::parse;
+
+use super::transient::TransientData;
 
 #[test]
 fn basic() {
@@ -66,5 +68,7 @@ static TRAN_EXAMPLE_PSF: &str = include_str!(concat!(
 
 #[test]
 fn parses_transient() {
-    let _psf = parse(TRAN_EXAMPLE_PSF).expect("Failed to parse transient PSF file");
+    let ast = parse(TRAN_EXAMPLE_PSF).expect("Failed to parse transient PSF file");
+    let data = TransientData::from_ast(&ast);
+    assert_eq!(data.signals.len(), 17);
 }

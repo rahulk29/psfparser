@@ -1,7 +1,9 @@
 use pest::iterators::Pair;
 use pest::Parser;
 
-use crate::parser::ast::{TypeDef, Header, Kind, NamedValue, Prop, PsfAst, SignalValues, Sweep, Trace, Value};
+use crate::parser::ast::{
+    Header, Kind, NamedValue, Prop, PsfAst, SignalValues, Sweep, Trace, TypeDef, Value,
+};
 use crate::Result;
 
 #[derive(Parser)]
