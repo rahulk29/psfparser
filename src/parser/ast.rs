@@ -68,5 +68,11 @@ pub struct Prop<'a> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SignalValues<'a> {
     pub signal: &'a str,
-    pub values: Vec<f64>,
+    pub values: Values,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Values {
+    Complex(Vec<(f64, f64)>),
+    Real(Vec<f64>),
 }

@@ -6,6 +6,8 @@ use crate::parser::ast::{
 };
 use crate::Result;
 
+use super::ast::Values;
+
 #[derive(Parser)]
 #[grammar = "psf_ascii.pest"]
 pub struct PsfAsciiParser;
@@ -212,8 +214,35 @@ fn parse_signal_value_simple(input: Pair<Rule>) -> Result<SignalValues> {
     Ok(SignalValues { signal, values })
 }
 
-fn parse_numbers(input: Pair<Rule>) -> Result<Vec<f64>> {
+fn parse_numbers(input: Pair<Rule>) -> Result<Values> {
+    Ok(match input.as_rule() {
+        Rule::simple_numbers => Values::Real(parse_simple_numbers(input)?),
+        Rule::composite_numbers => Values::Complex(parse_complex_numbers(input)?),
+        _ => panic!("Unexpected numbers type"),
+    })
+}
+
+fn parse_simple_numbers(input: Pair<Rule>) -> Result<Vec<f64>> {
     debug_assert_eq!(input.as_rule(), Rule::simple_numbers);
     let pairs = input.into_inner();
     pairs.map(parse_real).collect::<Result<Vec<_>>>()
+}
+
+fn parse_complex_numbers(input: Pair<Rule>) -> Result<Vec<(f64, f64)>> {
+    debug_assert_eq!(input.as_rule(), Rule::composite_numbers);
+    let pairs = input.into_inner().next().unwrap().into_inner();
+    let numbers = pairs
+        .map(parse_simple_numbers)
+        .collect::<Result<Vec<_>>>()?;
+    Ok(numbers
+        .iter()
+        .map(|number| {
+            assert_eq!(
+                number.len(),
+                2,
+                "complex numbers should have exactly two entries"
+            );
+            (number[0], number[1])
+        })
+        .collect())
 }

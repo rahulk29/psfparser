@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use super::ast::{PsfAst, Trace, Values};
 use crate::bin_search_before;
 
-pub struct TransientData {
-    pub signals: HashMap<String, Vec<f64>>,
-    pub time: String,
+pub struct AcData {
+    pub signals: HashMap<String, Vec<(f64, f64)>>,
+    pub freq: Vec<f64>,
 }
 
-impl TransientData {
+impl AcData {
     pub fn from_ast(ast: &PsfAst) -> Self {
         // Assume all groups have count = 1
         // group name -> signal name
@@ -35,35 +35,41 @@ impl TransientData {
             }
         }
 
-        groups.insert("time", "time");
-        let mut signals = HashMap::<String, Vec<f64>>::new();
+        let mut signals = HashMap::<String, Vec<(f64, f64)>>::new();
+        let mut freq = Vec::<f64>::new();
         for v in ast.values.iter() {
-            if let Values::Real(values) = &v.values {
-                debug_assert_eq!(values.len(), 1);
-                if let Some(lst) = signals.get_mut(groups[v.signal]) {
-                    lst.push(values[0]);
+            if v.signal == "freq" {
+                if let Values::Real(values) = &v.values {
+                    debug_assert_eq!(values.len(), 1);
+                    freq.push(values[0]);
                 } else {
-                    signals.insert(groups[v.signal].to_string(), vec![values[0]]);
+                    panic!("Expected real signal values; found complex");
                 }
             } else {
-                panic!("Expected real signal values; found complex");
+                if let Values::Complex(values) = &v.values {
+                    debug_assert_eq!(values.len(), 1);
+                    if let Some(lst) = signals.get_mut(groups[v.signal]) {
+                        lst.push(values[0]);
+                    } else {
+                        signals.insert(groups[v.signal].to_string(), vec![values[0]]);
+                    }
+                } else {
+                    panic!("Expected complex signal values; found real");
+                }
             }
         }
 
-        Self {
-            signals,
-            time: "time".to_string(),
-        }
+        Self { signals, freq }
     }
 
     /// Gets the index into the data arrays
-    /// corresponding to the latest time less than or equal to `t`.
-    pub fn idx_before_time(&self, t: f64) -> Option<usize> {
-        bin_search_before(self.signal(&self.time).unwrap(), t)
+    /// corresponding to the largest frequency less than or equal to `f`.
+    pub fn idx_before_freq(&self, f: f64) -> Option<usize> {
+        bin_search_before(&self.freq, f)
     }
 
     #[inline]
-    pub fn signal(&self, name: &str) -> Option<&Vec<f64>> {
+    pub fn signal(&self, name: &str) -> Option<&Vec<(f64, f64)>> {
         self.signals.get(name)
     }
 }

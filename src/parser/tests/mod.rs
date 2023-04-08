@@ -1,3 +1,4 @@
+use crate::parser::ac::AcData;
 use crate::parser::ast::*;
 use crate::parser::frontend::parse;
 
@@ -71,6 +72,11 @@ static TRAN_EXAMPLE2_PSF: &str = include_str!(concat!(
     "/examples/timeSweep2.tran.tran"
 ));
 
+static AC_EXAMPLE_PSF: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/examples/frequencySweep.ac"
+));
+
 #[test]
 fn parses_transient_1() {
     let ast = parse(TRAN_EXAMPLE1_PSF).expect("Failed to parse transient PSF file");
@@ -83,4 +89,12 @@ fn parses_transient_2() {
     let ast = parse(TRAN_EXAMPLE2_PSF).expect("Failed to parse transient PSF file");
     let data = TransientData::from_ast(&ast);
     assert_eq!(data.signals.len(), 41);
+}
+
+#[test]
+fn parses_ac() {
+    let ast = parse(AC_EXAMPLE_PSF).expect("Failed to parse ac PSF file");
+    let data = AcData::from_ast(&ast);
+    assert_eq!(data.signals.len(), 3);
+    assert_eq!(data.freq.len(), 13);
 }
