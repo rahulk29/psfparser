@@ -1,8 +1,8 @@
-use crate::parser::ac::AcData;
+use crate::parser::analysis::ac::AcData;
+use crate::parser::analysis::dc::DcData;
+use crate::parser::analysis::transient::TransientData;
 use crate::parser::ast::*;
 use crate::parser::frontend::parse;
-
-use super::transient::TransientData;
 
 #[test]
 fn basic() {
@@ -77,6 +77,12 @@ static AC_EXAMPLE_PSF: &str = include_str!(concat!(
     "/examples/frequencySweep.ac"
 ));
 
+static DC_EXAMPLE1_PSF: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/dc1.dc"));
+
+static DC_EXAMPLE2_PSF: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/dc2.dc"));
+
 #[test]
 fn parses_transient_1() {
     let ast = parse(TRAN_EXAMPLE1_PSF).expect("Failed to parse transient PSF file");
@@ -97,4 +103,28 @@ fn parses_ac() {
     let data = AcData::from_ast(&ast);
     assert_eq!(data.signals.len(), 3);
     assert_eq!(data.freq.len(), 13);
+}
+
+#[test]
+fn parses_dc_1() {
+    let ast = parse(DC_EXAMPLE1_PSF).expect("Failed to parse dc PSF file");
+    let data = DcData::from_ast(&ast);
+    if let DcData::Sweep(data) = data {
+        assert_eq!(data.signals.len(), 3);
+        assert_eq!(data.param.0, "vddval");
+        assert_eq!(data.param.1.len(), 2);
+    } else {
+        panic!("expected sweep data, not op data");
+    }
+}
+
+#[test]
+fn parses_dc_2() {
+    let ast = parse(DC_EXAMPLE2_PSF).expect("Failed to parse dc PSF file");
+    let data = DcData::from_ast(&ast);
+    if let DcData::Op(data) = data {
+        assert_eq!(data.signals.len(), 3);
+    } else {
+        panic!("expected op data, not sweep data");
+    }
 }

@@ -68,6 +68,7 @@ pub struct Prop<'a> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SignalValues<'a> {
     pub signal: &'a str,
+    pub sigtype: Option<&'a str>,
     pub values: Values,
 }
 

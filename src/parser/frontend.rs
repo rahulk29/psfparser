@@ -24,16 +24,26 @@ fn parse_psf_inner(input: Pair<Rule>) -> Result<PsfAst> {
     let mut pairs = input.into_inner();
     let header = parse_header(pairs.next().unwrap())?;
 
-    let (types, sweeps, traces, values) = if let Some(input) = pairs.next() {
-        let mut input = input.into_inner();
-        let types = parse_types(input.next().unwrap())?;
-        let sweeps = parse_sweeps(pairs.next().unwrap().into_inner().next().unwrap())?;
-        let traces = parse_traces(pairs.next().unwrap().into_inner().next().unwrap())?;
-        let values = parse_value_section(pairs.next().unwrap())?;
-        (types, sweeps, traces, values)
-    } else {
-        (Vec::new(), Vec::new(), Vec::new(), Vec::new())
-    };
+    let (mut types, mut sweeps, mut traces, mut values) =
+        (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+
+    for input in pairs {
+        match input.as_rule() {
+            Rule::type_section => {
+                types.extend(parse_types(input.into_inner().next().unwrap())?);
+            }
+            Rule::sweep_section => {
+                sweeps.extend(parse_sweeps(input.into_inner().next().unwrap())?);
+            }
+            Rule::trace_section => {
+                traces.extend(parse_traces(input.into_inner().next().unwrap())?);
+            }
+            Rule::value_section => {
+                values.extend(parse_value_section(input)?);
+            }
+            _ => break,
+        }
+    }
 
     Ok(PsfAst {
         header,
@@ -202,7 +212,8 @@ fn parse_signal_value(input: Pair<Rule>) -> Result<SignalValues> {
     let input = input.into_inner().next().unwrap();
     Ok(match input.as_rule() {
         Rule::signal_value_simple => parse_signal_value_simple(input)?,
-        _ => panic!("Unexpected signal value"),
+        Rule::signal_value_typed => parse_signal_value_typed(input)?,
+        r => panic!("Unexpected signal value {:?}", r),
     })
 }
 
@@ -211,7 +222,24 @@ fn parse_signal_value_simple(input: Pair<Rule>) -> Result<SignalValues> {
     let mut input = input.into_inner();
     let signal = parse_string(input.next().unwrap())?;
     let values = parse_numbers(input.next().unwrap())?;
-    Ok(SignalValues { signal, values })
+    Ok(SignalValues {
+        signal,
+        sigtype: None,
+        values,
+    })
+}
+
+fn parse_signal_value_typed(input: Pair<Rule>) -> Result<SignalValues> {
+    debug_assert_eq!(input.as_rule(), Rule::signal_value_typed);
+    let mut input = input.into_inner();
+    let signal = parse_string(input.next().unwrap())?;
+    let sigtype = Some(parse_string(input.next().unwrap())?);
+    let values = parse_numbers(input.next().unwrap())?;
+    Ok(SignalValues {
+        signal,
+        sigtype,
+        values,
+    })
 }
 
 fn parse_numbers(input: Pair<Rule>) -> Result<Values> {
