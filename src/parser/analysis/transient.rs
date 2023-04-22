@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use super::ast::{PsfAst, Trace, Values};
 use crate::bin_search_before;
+use crate::parser::ast::{PsfAst, Trace, Values};
 
 pub struct TransientData {
     pub signals: HashMap<String, Vec<f64>>,

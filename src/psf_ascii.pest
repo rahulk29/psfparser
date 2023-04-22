@@ -3,7 +3,7 @@ WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 psf_ascii = _{ SOI ~ psf_ascii_inner ~ EOI }
 psf_ascii_inner = {
     header_section
-    ~ (type_section ~ sweep_section ~ trace_section ~ value_section)?
+    ~ (type_section ~ sweep_section? ~ trace_section? ~ value_section)?
     ~ end
 }
 

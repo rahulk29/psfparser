@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use super::ast::{PsfAst, Trace, Values};
 use crate::bin_search_before;
+use crate::parser::ast::{PsfAst, Trace, Values};
 
 pub struct AcData {
     pub signals: HashMap<String, Vec<(f64, f64)>>,
@@ -45,17 +45,15 @@ impl AcData {
                 } else {
                     panic!("Expected real signal values; found complex");
                 }
-            } else {
-                if let Values::Complex(values) = &v.values {
-                    debug_assert_eq!(values.len(), 1);
-                    if let Some(lst) = signals.get_mut(groups[v.signal]) {
-                        lst.push(values[0]);
-                    } else {
-                        signals.insert(groups[v.signal].to_string(), vec![values[0]]);
-                    }
+            } else if let Values::Complex(values) = &v.values {
+                debug_assert_eq!(values.len(), 1);
+                if let Some(lst) = signals.get_mut(groups[v.signal]) {
+                    lst.push(values[0]);
                 } else {
-                    panic!("Expected complex signal values; found real");
+                    signals.insert(groups[v.signal].to_string(), vec![values[0]]);
                 }
+            } else {
+                panic!("Expected complex signal values; found real");
             }
         }
 
