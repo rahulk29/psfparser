@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+pub mod binparse;
 pub mod parser;
 
 pub type Result<T> = anyhow::Result<T>;
