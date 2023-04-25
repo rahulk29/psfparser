@@ -7,11 +7,64 @@ pub mod ast;
 #[cfg(test)]
 mod tests;
 
+pub struct PsfParser<'a> {
+    data: &'a [u8],
+    toc: Option<Toc>,
+    ast: PsfAst<'a>,
+
+    // Group ID to offset
+    offsets: HashMap<u32, u32>,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(u32)]
-enum BlockType {
-    Null = 3,
-    Sweeps = 21,
-    SignalRef = 16,
+pub enum DataType {
+    Int8 = 1,
+    String = 2,
+    Int32 = 5,
+    Real = 11,
+    Complex = 12,
+    Struct = 16,
+}
+
+impl<'a> PsfParser<'a> {
+    fn toc(&mut self) -> &Toc {
+        match self.toc {
+            Some(ref toc) => toc,
+            None => {
+                let toc = parse_toc(self.data);
+                self.toc = Some(toc);
+                unsafe { self.toc.as_ref().unwrap_unchecked() }
+            }
+        }
+    }
+
+    fn windowed(&self) -> bool {
+        self.ast.header.values.contains_key("PSF window size")
+    }
+
+    fn window_size(&self) -> i64 {
+        let v = self.ast.header.values.get("PSF window size").unwrap();
+        v.int()
+    }
+
+    fn parse_values(&mut self) {
+        let entry = self.toc().section(SectionKind::Value);
+        let (data, eofs) = parse_int(&self.data[entry.start + 4..]);
+
+        let window_size = self.window_size();
+        let mut ofs = 0;
+        for trace in self.ast.traces.iter() {
+            for signal in trace.group().signals.iter() {
+                self.offsets.insert(signal.id, ofs);
+                ofs += window_size as u32;
+            }
+        }
+
+        let (data, block_t) = parse_int(data);
+        assert_eq!(block_t, 20);
+        let data = parse_zero_pad(data);
+    }
 }
 
 fn parse_toc<'a>(data: &'a [u8]) -> Toc {
@@ -44,6 +97,11 @@ fn parse_toc<'a>(data: &'a [u8]) -> Toc {
     toc
 }
 
+fn parse_zero_pad(data: &[u8]) -> &[u8] {
+    let (data, len) = parse_int(&data[4..]);
+    &data[4 + len as usize..]
+}
+
 fn parse_sweep_values<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<SignalRef<'a>> {
     todo!()
 }
@@ -56,7 +114,7 @@ fn parse_sweeps<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<SignalRef<'a
 
     while data.len() > 4 {
         let (d, id) = parse_int(data);
-        assert_eq!(id, BlockType::SignalRef as u32);
+        assert_eq!(id, 16);
         let r = parse_signal_ref(d);
         data = r.0;
         values.push(r.1);
@@ -195,12 +253,12 @@ fn parse_header<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Header<'a> {
     let (_, eofs) = parse_int(&file[entry.start + 4..]);
 
     let mut data = &file[entry.start + 8..eofs as usize];
-    let mut values = Vec::new();
+    let mut values = HashMap::new();
 
     while data.len() > 4 {
         let r = parse_named_value(data);
         data = r.0;
-        values.push(r.1);
+        values.insert(r.1.name, r.1.value);
     }
 
     Header { values }
@@ -312,7 +370,7 @@ impl SectionKind {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct TocEntry {
     start: usize,
     /// Not inclusive.
@@ -337,5 +395,9 @@ impl Toc {
         Self {
             data: HashMap::with_capacity(capacity),
         }
+    }
+
+    pub fn section(&self, section: SectionKind) -> TocEntry {
+        self.data[&section]
     }
 }

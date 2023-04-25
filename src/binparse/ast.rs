@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct PsfAst<'a> {
     pub header: Header<'a>,
@@ -9,7 +11,7 @@ pub struct PsfAst<'a> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Header<'a> {
-    pub values: Vec<NamedValue<'a>>,
+    pub values: HashMap<&'a str, Value<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -32,6 +34,30 @@ pub enum Value<'a> {
     Real(f64),
     Str(&'a str),
     NaN,
+}
+
+impl<'a> Value<'a> {
+    pub fn int(&self) -> i64 {
+        use Value::*;
+        match self {
+            Int(v) => *v,
+            _ => panic!("Failed to unwrap value as integer"),
+        }
+    }
+    pub fn real(&self) -> f64 {
+        use Value::*;
+        match self {
+            Real(v) => *v,
+            _ => panic!("Failed to unwrap value as real"),
+        }
+    }
+    pub fn str(&self) -> &'a str {
+        use Value::*;
+        match self {
+            Str(v) => *v,
+            _ => panic!("Failed to unwrap value as str"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -60,6 +86,22 @@ pub enum Kind<'a> {
 pub enum Trace<'a> {
     Group(TraceGroup<'a>),
     Signal(SignalRef<'a>),
+}
+
+impl<'a> Trace<'a> {
+    pub fn group(&self) -> &TraceGroup {
+        match self {
+            Self::Group(g) => g,
+            _ => panic!("Cannot unwrap signal as group"),
+        }
+    }
+
+    pub fn signal(&self) -> &SignalRef {
+        match self {
+            Self::Signal(s) => s,
+            _ => panic!("Cannot unwrap group trace as signal"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
