@@ -12,31 +12,47 @@ pub struct PsfParser<'a> {
     toc: Option<Toc>,
     ast: PsfAst<'a>,
 
-    // Group ID to offset
-    offsets: HashMap<u32, u32>,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-#[repr(u32)]
-pub enum DataType {
-    Int8 = 1,
-    String = 2,
-    Int32 = 5,
-    Real = 11,
-    Complex = 12,
-    Struct = 16,
+    // Trace ID to offset
+    offsets: HashMap<TraceId, u32>,
 }
 
 impl<'a> PsfParser<'a> {
+    pub fn new(file: &'a [u8]) -> Self {
+        Self {
+            data: file,
+            toc: None,
+            ast: PsfAst::default(),
+            offsets: HashMap::new(),
+        }
+    }
+
+    pub fn parse(&mut self) {
+        self.parse_toc();
+        self.parse_header();
+        self.parse_types();
+        self.parse_sweeps();
+        self.parse_traces();
+        self.parse_values();
+    }
+
+    #[inline]
+    pub fn into_inner(self) -> PsfAst<'a> {
+        self.ast
+    }
+
     fn toc(&mut self) -> &Toc {
         match self.toc {
             Some(ref toc) => toc,
             None => {
-                let toc = parse_toc(self.data);
-                self.toc = Some(toc);
-                unsafe { self.toc.as_ref().unwrap_unchecked() }
+                self.parse_toc();
+                self.toc.as_ref().unwrap()
             }
         }
+    }
+
+    fn parse_toc(&mut self) {
+        let toc = parse_toc(self.data);
+        self.toc = Some(toc);
     }
 
     fn windowed(&self) -> bool {
@@ -48,11 +64,28 @@ impl<'a> PsfParser<'a> {
         v.int()
     }
 
+    fn num_traces(&self) -> i64 {
+        let v = self.ast.header.values.get("PSF traces").unwrap();
+        v.int()
+    }
+
+    fn sweep_points(&self) -> i64 {
+        let v = self.ast.header.values.get("PSF sweep points").unwrap();
+        v.int()
+    }
+
     fn parse_values(&mut self) {
+        assert!(
+            self.windowed(),
+            "Binary PSF parser only supports windowed PSF files"
+        );
         let entry = self.toc().section(SectionKind::Value);
         let (data, eofs) = parse_int(&self.data[entry.start + 4..]);
 
         let window_size = self.window_size();
+        let num_traces = self.num_traces();
+        let sweep_points = self.sweep_points();
+
         let mut ofs = 0;
         for trace in self.ast.traces.iter() {
             for signal in trace.group().signals.iter() {
@@ -64,6 +97,82 @@ impl<'a> PsfParser<'a> {
         let (data, block_t) = parse_int(data);
         assert_eq!(block_t, 20);
         let data = parse_zero_pad(data);
+        println!("{:?}", data);
+
+        let mut data = data;
+        let mut count = 0;
+        while count < sweep_points {
+            let block_init;
+            (data, block_init) = parse_int(data);
+            println!("block_init = {block_init}");
+            let window_count = block_init & 0xffff;
+
+            for _ in 0..window_count {
+                let v;
+                (data, v) = parse_float(data);
+                println!("v = {v}");
+            }
+
+            for group in self.ast.traces.iter() {
+                for sig in group.group().signals.iter() {
+                    let idx = (self.offsets[&sig.id] as u32
+                        + (window_size as u32 - window_count as u32 * 8))
+                        as usize;
+                    let data_type = self.ast.types.types[&sig.type_id].data_type;
+                    let mut databuf = &data[idx..];
+
+                    match data_type {
+                        DataType::Real => {
+                            let values = self
+                                .ast
+                                .values
+                                .values
+                                .entry(sig.id)
+                                .or_insert(Values::Real(vec![]));
+                            let values = values.real_mut();
+                            for _ in 0..window_count {
+                                let v = read_f64(&mut databuf);
+                                values.push(v);
+                            }
+                        }
+                        DataType::Complex => {
+                            let values = self
+                                .ast
+                                .values
+                                .values
+                                .entry(sig.id)
+                                .or_insert(Values::Complex(vec![]));
+                            let values = values.complex_mut();
+                            for _ in 0..window_count {
+                                let real = read_f64(&mut databuf);
+                                let imag = read_f64(&mut databuf);
+                                values.push((real, imag));
+                            }
+                        }
+                        _ => panic!("Unsupported data type: {data_type:?}"),
+                    };
+                }
+            }
+
+            data = &data[(num_traces * window_size) as usize..];
+            count += window_count as i64;
+        }
+    }
+
+    fn parse_types(&mut self) {
+        self.ast.types = parse_types(self.data, &self.toc().section(SectionKind::Type));
+    }
+
+    fn parse_sweeps(&mut self) {
+        self.ast.sweeps = parse_sweeps(self.data, &self.toc().section(SectionKind::Sweep));
+    }
+
+    fn parse_traces(&mut self) {
+        self.ast.traces = parse_traces(self.data, &self.toc().section(SectionKind::Trace));
+    }
+
+    fn parse_header(&mut self) {
+        self.ast.header = parse_header(self.data, &self.toc().section(SectionKind::Header));
     }
 }
 
@@ -98,7 +207,8 @@ fn parse_toc<'a>(data: &'a [u8]) -> Toc {
 }
 
 fn parse_zero_pad(data: &[u8]) -> &[u8] {
-    let (data, len) = parse_int(&data[4..]);
+    let (data, len) = parse_int(data);
+    println!("zero pad len = {len}");
     &data[4 + len as usize..]
 }
 
@@ -123,22 +233,22 @@ fn parse_sweeps<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<SignalRef<'a
     values
 }
 
-fn parse_types<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<TypeDef<'a>> {
+fn parse_types<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Types<'a> {
     let data = &file[entry.start + 8..];
     let (data, block_t) = parse_int(data);
     assert_eq!(block_t, 22);
     let (_, eofs) = parse_int(data);
     let mut data = &file[entry.start + 8 + 8..eofs as usize];
 
-    let mut values = Vec::new();
+    let mut types = HashMap::new();
 
     while data.len() > 4 {
         let r = parse_type_item(data);
         data = r.0;
-        values.push(r.1);
+        types.insert(r.1.id, r.1);
     }
 
-    values
+    Types { types }
 }
 
 fn parse_type_item<'a>(data: &'a [u8]) -> (&'a [u8], TypeDef<'a>) {
@@ -156,9 +266,9 @@ fn parse_type_item<'a>(data: &'a [u8]) -> (&'a [u8], TypeDef<'a>) {
     (
         data,
         TypeDef {
-            id,
+            id: TypeId(id),
             name,
-            data_type,
+            data_type: DataType::from_u32(data_type),
             properties,
         },
     )
@@ -224,7 +334,7 @@ fn parse_group<'a>(data: &'a [u8]) -> (&'a [u8], TraceGroup<'a>) {
         TraceGroup {
             name,
             count,
-            id,
+            id: GroupId(id),
             signals,
         },
     )
@@ -235,15 +345,15 @@ fn parse_signal_ref<'a>(data: &'a [u8]) -> (&'a [u8], SignalRef<'a>) {
     println!("parsing signal ref");
     let (data, id) = parse_int(data);
     let (data, name) = parse_string(data);
-    let (data, unit_id) = parse_int(data);
+    let (data, type_id) = parse_int(data);
     let (data, properties) = parse_properties(data);
 
     (
         data,
         SignalRef {
-            id,
+            id: TraceId(id),
             name,
-            unit_id,
+            type_id: TypeId(type_id),
             properties,
         },
     )
@@ -348,7 +458,7 @@ pub fn read_f64(input: &mut &[u8]) -> f64 {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
-enum SectionKind {
+pub enum SectionKind {
     Header,
     Type,
     Sweep,

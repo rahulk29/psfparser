@@ -27,30 +27,38 @@ fn test_traces() {
     let expected = vec![Trace::Group(TraceGroup {
         name: "group",
         count: 3,
-        id: 24,
+        id: GroupId(24),
         signals: vec![
             SignalRef {
-                id: 25,
+                id: TraceId(25),
                 name: "out",
-                unit_id: 11,
+                type_id: TypeId(11),
                 properties: Properties { values: vec![] },
             },
             SignalRef {
-                id: 26,
+                id: TraceId(26),
                 name: "vdd",
-                unit_id: 11,
+                type_id: TypeId(11),
                 properties: Properties { values: vec![] },
             },
             SignalRef {
-                id: 27,
+                id: TraceId(27),
                 name: "Vvdd:p",
-                unit_id: 12,
+                type_id: TypeId(12),
                 properties: Properties { values: vec![] },
             },
         ],
     })];
     println!("Traces: {:?}", traces);
     assert_eq!(traces, expected);
+}
+
+#[test]
+fn test_values() {
+    let toc = parse_toc(TRAN_EXAMPLE_PSFBIN);
+    println!("ToC: {:?}", toc);
+    let mut parser = PsfParser::new(TRAN_EXAMPLE_PSFBIN);
+    parser.parse();
 }
 
 #[test]
