@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use crate::ascii::ast::{PsfAst, Trace, Values};
 use crate::bin_search_before;
-use crate::parser::ast::{PsfAst, Trace, Values};
 
 pub struct AcData {
     pub signals: HashMap<String, Vec<(f64, f64)>>,

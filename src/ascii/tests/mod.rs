@@ -1,8 +1,8 @@
-use crate::parser::analysis::ac::AcData;
-use crate::parser::analysis::dc::DcData;
-use crate::parser::analysis::transient::TransientData;
-use crate::parser::ast::*;
-use crate::parser::frontend::parse;
+use crate::analysis::ac::AcData;
+use crate::analysis::dc::DcData;
+use crate::analysis::transient::TransientData;
+use crate::ascii::ast::*;
+use crate::ascii::frontend::parse;
 
 #[test]
 fn basic() {
@@ -86,14 +86,14 @@ static DC_EXAMPLE2_PSF: &str =
 #[test]
 fn parses_transient_1() {
     let ast = parse(TRAN_EXAMPLE1_PSF).expect("Failed to parse transient PSF file");
-    let data = TransientData::from_ast(&ast);
+    let data = TransientData::from_ascii(&ast);
     assert_eq!(data.signals.len(), 17);
 }
 
 #[test]
 fn parses_transient_2() {
     let ast = parse(TRAN_EXAMPLE2_PSF).expect("Failed to parse transient PSF file");
-    let data = TransientData::from_ast(&ast);
+    let data = TransientData::from_ascii(&ast);
     assert_eq!(data.signals.len(), 41);
 }
 

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::parser::ast::{PsfAst, Trace, Values};
+use crate::ascii::ast::{PsfAst, Trace, Values};
 
 pub enum DcData {
     Op(OpData),

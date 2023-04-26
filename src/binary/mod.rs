@@ -7,6 +7,14 @@ pub mod ast;
 #[cfg(test)]
 mod tests;
 
+use crate::Result;
+
+pub fn parse(input: &[u8]) -> Result<PsfAst> {
+    let mut parser = PsfParser::new(input);
+    parser.parse();
+    Ok(parser.into_inner())
+}
+
 pub struct PsfParser<'a> {
     data: &'a [u8],
     toc: Option<Toc>,

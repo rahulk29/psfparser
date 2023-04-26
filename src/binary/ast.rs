@@ -193,6 +193,20 @@ pub enum Values {
 }
 
 impl Values {
+    pub fn unwrap_real(self) -> Vec<f64> {
+        match self {
+            Self::Real(v) => v,
+            _ => panic!("not a real value vector"),
+        }
+    }
+
+    pub fn unwrap_complex(self) -> Vec<(f64, f64)> {
+        match self {
+            Self::Complex(v) => v,
+            _ => panic!("not a complex value vector"),
+        }
+    }
+
     pub fn real(&self) -> &Vec<f64> {
         match self {
             Self::Real(ref v) => v,

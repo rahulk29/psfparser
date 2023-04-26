@@ -1,3 +1,5 @@
+use crate::analysis::transient::TransientData;
+
 use super::*;
 
 static TRAN_EXAMPLE_PSFBIN: &[u8] = include_bytes!(concat!(
@@ -67,4 +69,12 @@ fn test_sweeps() {
     println!("ToC: {:?}", toc);
     let sweeps = parse_sweeps(TRAN_EXAMPLE_PSFBIN, &toc.data[&SectionKind::Sweep]);
     println!("Sweeps: {:?}", sweeps);
+}
+
+#[test]
+fn test_to_transient() {
+    use crate::binary::parse;
+    let ast = parse(TRAN_EXAMPLE_PSFBIN).unwrap();
+    let data = TransientData::from_binary(ast);
+    assert_eq!(data.signals.len(), 3);
 }
