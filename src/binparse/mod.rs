@@ -80,7 +80,7 @@ impl<'a> PsfParser<'a> {
             "Binary PSF parser only supports windowed PSF files"
         );
         let entry = self.toc().section(SectionKind::Value);
-        let (data, eofs) = parse_int(&self.data[entry.start + 4..]);
+        let (data, _eofs) = parse_int(&self.data[entry.start + 4..]);
 
         let window_size = self.window_size();
         let num_traces = self.num_traces();
@@ -115,9 +115,8 @@ impl<'a> PsfParser<'a> {
 
             for group in self.ast.traces.iter() {
                 for sig in group.group().signals.iter() {
-                    let idx = (self.offsets[&sig.id] as u32
-                        + (window_size as u32 - window_count as u32 * 8))
-                        as usize;
+                    let idx =
+                        (self.offsets[&sig.id] + (window_size as u32 - window_count * 8)) as usize;
                     let data_type = self.ast.types.types[&sig.type_id].data_type;
                     let mut databuf = &data[idx..];
 
@@ -176,7 +175,7 @@ impl<'a> PsfParser<'a> {
     }
 }
 
-fn parse_toc<'a>(data: &'a [u8]) -> Toc {
+fn parse_toc(data: &[u8]) -> Toc {
     let ds = peek_u32(&data[data.len() - 4..]) as usize;
     let n = (data.len() - ds - 12) / 8;
 
@@ -212,11 +211,7 @@ fn parse_zero_pad(data: &[u8]) -> &[u8] {
     &data[4 + len as usize..]
 }
 
-fn parse_sweep_values<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<SignalRef<'a>> {
-    todo!()
-}
-
-fn parse_sweeps<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<SignalRef<'a>> {
+fn parse_sweeps<'a>(file: &'a [u8], entry: &TocEntry) -> Vec<SignalRef<'a>> {
     let (_, eofs) = parse_int(&file[entry.start + 4..]);
 
     let mut data = &file[entry.start + 8..eofs as usize];
@@ -233,7 +228,7 @@ fn parse_sweeps<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<SignalRef<'a
     values
 }
 
-fn parse_types<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Types<'a> {
+fn parse_types<'a>(file: &'a [u8], entry: &TocEntry) -> Types<'a> {
     let data = &file[entry.start + 8..];
     let (data, block_t) = parse_int(data);
     assert_eq!(block_t, 22);
@@ -251,7 +246,7 @@ fn parse_types<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Types<'a> {
     Types { types }
 }
 
-fn parse_type_item<'a>(data: &'a [u8]) -> (&'a [u8], TypeDef<'a>) {
+fn parse_type_item(data: &[u8]) -> (&[u8], TypeDef<'_>) {
     println!("parsing type item");
 
     let (data, block_t) = parse_int(data);
@@ -259,7 +254,7 @@ fn parse_type_item<'a>(data: &'a [u8]) -> (&'a [u8], TypeDef<'a>) {
 
     let (data, id) = parse_int(data);
     let (data, name) = parse_string(data);
-    let (data, array_t) = parse_int(data);
+    let (data, _array_t) = parse_int(data);
     let (data, data_type) = parse_int(data);
     let (data, properties) = parse_properties(data);
 
@@ -274,7 +269,7 @@ fn parse_type_item<'a>(data: &'a [u8]) -> (&'a [u8], TypeDef<'a>) {
     )
 }
 
-fn parse_traces<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<Trace<'a>> {
+fn parse_traces<'a>(file: &'a [u8], entry: &TocEntry) -> Vec<Trace<'a>> {
     let data = &file[entry.start + 8..];
     let (data, block_t) = parse_int(data);
     assert_eq!(block_t, 22);
@@ -292,7 +287,7 @@ fn parse_traces<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Vec<Trace<'a>> {
     values
 }
 
-fn parse_trace_item<'a>(data: &'a [u8]) -> (&'a [u8], Trace<'a>) {
+fn parse_trace_item(data: &[u8]) -> (&[u8], Trace<'_>) {
     let (data, block_t) = parse_int(data);
     println!("parsing trace item");
     match block_t {
@@ -311,7 +306,7 @@ fn parse_trace_item<'a>(data: &'a [u8]) -> (&'a [u8], Trace<'a>) {
 }
 
 // GroupDef
-fn parse_group<'a>(data: &'a [u8]) -> (&'a [u8], TraceGroup<'a>) {
+fn parse_group(data: &[u8]) -> (&[u8], TraceGroup<'_>) {
     println!("parsing group");
     let (data, id) = parse_int(data);
     let (data, name) = parse_string(data);
@@ -320,7 +315,7 @@ fn parse_group<'a>(data: &'a [u8]) -> (&'a [u8], TraceGroup<'a>) {
     println!("Found {count} signals in group");
 
     let mut signals = Vec::new();
-    for i in 0..count {
+    for _ in 0..count {
         let r = parse_int(data);
         let block_t = r.1;
         assert_eq!(block_t, 16);
@@ -341,7 +336,7 @@ fn parse_group<'a>(data: &'a [u8]) -> (&'a [u8], TraceGroup<'a>) {
 }
 
 // data type ref
-fn parse_signal_ref<'a>(data: &'a [u8]) -> (&'a [u8], SignalRef<'a>) {
+fn parse_signal_ref(data: &[u8]) -> (&[u8], SignalRef<'_>) {
     println!("parsing signal ref");
     let (data, id) = parse_int(data);
     let (data, name) = parse_string(data);
@@ -359,7 +354,7 @@ fn parse_signal_ref<'a>(data: &'a [u8]) -> (&'a [u8], SignalRef<'a>) {
     )
 }
 
-fn parse_header<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Header<'a> {
+fn parse_header<'a>(file: &'a [u8], entry: &TocEntry) -> Header<'a> {
     let (_, eofs) = parse_int(&file[entry.start + 4..]);
 
     let mut data = &file[entry.start + 8..eofs as usize];
@@ -374,10 +369,6 @@ fn parse_header<'a, 'b>(file: &'a [u8], entry: &'b TocEntry) -> Header<'a> {
     Header { values }
 }
 
-fn parse_end(data: &[u8]) -> (&[u8], ()) {
-    (&data[4..], ())
-}
-
 fn parse_properties(data: &[u8]) -> (&[u8], Properties) {
     let mut data = data;
 
@@ -386,7 +377,7 @@ fn parse_properties(data: &[u8]) -> (&[u8], Properties) {
     while {
         data.len() > 4 && {
             let (_, block_t) = parse_int(data);
-            block_t >= 33 && block_t <= 35
+            (33..=35).contains(&block_t)
         }
     } {
         let val;
@@ -397,7 +388,7 @@ fn parse_properties(data: &[u8]) -> (&[u8], Properties) {
     (data, Properties { values })
 }
 
-fn parse_named_value(mut data: &[u8]) -> (&[u8], NamedValue) {
+fn parse_named_value(data: &[u8]) -> (&[u8], NamedValue) {
     let (data, block_t) = parse_int(data);
     let (data, name) = parse_string(data);
 
@@ -493,13 +484,6 @@ struct Toc {
 }
 
 impl Toc {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            data: HashMap::new(),
-        }
-    }
-
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {

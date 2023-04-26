@@ -105,7 +105,7 @@ impl<'a> Value<'a> {
     pub fn str(&self) -> &'a str {
         use Value::*;
         match self {
-            Str(v) => *v,
+            Str(v) => v,
             _ => panic!("Failed to unwrap value as str"),
         }
     }
