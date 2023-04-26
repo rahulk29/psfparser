@@ -19,6 +19,11 @@ impl TransientData {
             }
         }
 
+        for swp in ast.sweeps.iter() {
+            let data = ast.values.values.remove(&swp.id).unwrap().unwrap_real();
+            signals.insert(swp.name.to_string(), data);
+        }
+
         Self {
             signals,
             time: "time".to_string(),

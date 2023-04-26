@@ -75,6 +75,13 @@ fn test_sweeps() {
 fn test_to_transient() {
     use crate::binary::parse;
     let ast = parse(TRAN_EXAMPLE_PSFBIN).unwrap();
+    println!("ast = {ast:#?}");
     let data = TransientData::from_binary(ast);
-    assert_eq!(data.signals.len(), 3);
+    assert_eq!(data.signals.len(), 4);
+    assert_eq!(
+        data.signal("time")
+            .expect("should contain a time signal")
+            .len(),
+        11
+    );
 }

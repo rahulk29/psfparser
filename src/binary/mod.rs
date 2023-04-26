@@ -105,20 +105,29 @@ impl<'a> PsfParser<'a> {
         let (data, block_t) = parse_int(data);
         assert_eq!(block_t, 20);
         let data = parse_zero_pad(data);
-        println!("{:?}", data);
 
         let mut data = data;
         let mut count = 0;
         while count < sweep_points {
             let block_init;
             (data, block_init) = parse_int(data);
-            println!("block_init = {block_init}");
             let window_count = block_init & 0xffff;
+
+            let swp_sig = &self.ast.sweeps[0];
+            let swp_name = swp_sig.name;
+            println!("swp_name = {swp_name}");
+            let swp_vec = self
+                .ast
+                .values
+                .values
+                .entry(swp_sig.id)
+                .or_insert(Values::Real(vec![]));
+            let swp_vec = swp_vec.real_mut();
 
             for _ in 0..window_count {
                 let v;
                 (data, v) = parse_float(data);
-                println!("v = {v}");
+                swp_vec.push(v);
             }
 
             for group in self.ast.traces.iter() {
@@ -127,6 +136,8 @@ impl<'a> PsfParser<'a> {
                         (self.offsets[&sig.id] + (window_size as u32 - window_count * 8)) as usize;
                     let data_type = self.ast.types.types[&sig.type_id].data_type;
                     let mut databuf = &data[idx..];
+
+                    assert_ne!(swp_name, sig.name);
 
                     match data_type {
                         DataType::Real => {
@@ -215,7 +226,6 @@ fn parse_toc(data: &[u8]) -> Toc {
 
 fn parse_zero_pad(data: &[u8]) -> &[u8] {
     let (data, len) = parse_int(data);
-    println!("zero pad len = {len}");
     &data[4 + len as usize..]
 }
 
@@ -255,8 +265,6 @@ fn parse_types<'a>(file: &'a [u8], entry: &TocEntry) -> Types<'a> {
 }
 
 fn parse_type_item(data: &[u8]) -> (&[u8], TypeDef<'_>) {
-    println!("parsing type item");
-
     let (data, block_t) = parse_int(data);
     assert_eq!(block_t, 16);
 
@@ -297,7 +305,6 @@ fn parse_traces<'a>(file: &'a [u8], entry: &TocEntry) -> Vec<Trace<'a>> {
 
 fn parse_trace_item(data: &[u8]) -> (&[u8], Trace<'_>) {
     let (data, block_t) = parse_int(data);
-    println!("parsing trace item");
     match block_t {
         16 => {
             // DataTypeDef
@@ -315,12 +322,9 @@ fn parse_trace_item(data: &[u8]) -> (&[u8], Trace<'_>) {
 
 // GroupDef
 fn parse_group(data: &[u8]) -> (&[u8], TraceGroup<'_>) {
-    println!("parsing group");
     let (data, id) = parse_int(data);
     let (data, name) = parse_string(data);
     let (mut data, count) = parse_int(data);
-
-    println!("Found {count} signals in group");
 
     let mut signals = Vec::new();
     for _ in 0..count {
@@ -345,7 +349,6 @@ fn parse_group(data: &[u8]) -> (&[u8], TraceGroup<'_>) {
 
 // data type ref
 fn parse_signal_ref(data: &[u8]) -> (&[u8], SignalRef<'_>) {
-    println!("parsing signal ref");
     let (data, id) = parse_int(data);
     let (data, name) = parse_string(data);
     let (data, type_id) = parse_int(data);
