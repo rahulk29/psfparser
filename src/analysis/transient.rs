@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
+use crate::ascii::ast::{PsfAst as AsciiAst, Trace, Values};
 use crate::bin_search_before;
-use crate::parser::ast::{PsfAst, Trace, Values};
+use crate::binary::ast::PsfAst as BinaryAst;
 
 pub struct TransientData {
     pub signals: HashMap<String, Vec<f64>>,
@@ -9,7 +10,27 @@ pub struct TransientData {
 }
 
 impl TransientData {
-    pub fn from_ast(ast: &PsfAst) -> Self {
+    pub fn from_binary(mut ast: BinaryAst) -> Self {
+        let mut signals = HashMap::new();
+        for trace in ast.traces.iter() {
+            for sig in trace.group().signals.iter() {
+                let data = ast.values.values.remove(&sig.id).unwrap().unwrap_real();
+                signals.insert(sig.name.to_string(), data);
+            }
+        }
+
+        for swp in ast.sweeps.iter() {
+            let data = ast.values.values.remove(&swp.id).unwrap().unwrap_real();
+            signals.insert(swp.name.to_string(), data);
+        }
+
+        Self {
+            signals,
+            time: "time".to_string(),
+        }
+    }
+
+    pub fn from_ascii(ast: &AsciiAst) -> Self {
         // Assume all groups have count = 1
         // group name -> signal name
         let mut groups = HashMap::<&str, &str>::new();

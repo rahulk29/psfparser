@@ -1,6 +1,8 @@
 use std::cmp::Ordering;
 
-pub mod parser;
+pub mod analysis;
+pub mod ascii;
+pub mod binary;
 
 pub type Result<T> = anyhow::Result<T>;
 

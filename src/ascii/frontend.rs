@@ -1,7 +1,7 @@
 use pest::iterators::Pair;
 use pest::Parser;
 
-use crate::parser::ast::{
+use crate::ascii::ast::{
     Header, Kind, NamedValue, Prop, PsfAst, SignalValues, Sweep, Trace, TypeDef, Value,
 };
 use crate::Result;
@@ -9,7 +9,7 @@ use crate::Result;
 use super::ast::Values;
 
 #[derive(Parser)]
-#[grammar = "psf_ascii.pest"]
+#[grammar = "ascii/psf_ascii.pest"]
 pub struct PsfAsciiParser;
 
 pub fn parse(input: &str) -> Result<PsfAst> {
