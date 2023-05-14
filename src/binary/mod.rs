@@ -110,9 +110,8 @@ impl<'a> PsfParser<'a> {
         let mut count = 0;
         while count < sweep_points {
             let block_init;
-            let block_t;
-            (data, block_t) = parse_int(data);
-            assert_eq!(block_t, 16, "incorrect block type");
+            let _block_t;
+            (data, _block_t) = parse_int(data);
             (data, block_init) = parse_int(data);
             let _window_left = block_init >> 16;
             let window_count = block_init & 0xffff;

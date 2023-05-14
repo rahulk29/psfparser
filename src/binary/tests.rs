@@ -12,6 +12,11 @@ pub(crate) static VDIV_SIN_PSFBIN: &[u8] = include_bytes!(concat!(
     "/examples/vdiv_sin_bin.tran.tran"
 ));
 
+pub(crate) static SRAM_TINY_PSFBIN: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/examples/sram_tiny_bin.tran.tran"
+));
+
 #[test]
 fn test_header() {
     let toc = parse_toc(TRAN_EXAMPLE_PSFBIN_1);
@@ -102,5 +107,19 @@ fn parses_vdiv_sin_bin() {
             .expect("should contain a time signal")
             .len(),
         16001
+    );
+}
+
+#[test]
+fn parses_sram_tiny_bin() {
+    use crate::binary::parse;
+    let ast = parse(SRAM_TINY_PSFBIN).unwrap();
+    let data = TransientData::from_binary(ast);
+    assert_eq!(data.signals.len(), 1321);
+    assert_eq!(
+        data.signal("time")
+            .expect("should contain a time signal")
+            .len(),
+        781
     );
 }
