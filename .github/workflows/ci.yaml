@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - 'master'
+  pull_request:
+
+jobs:
+  check-workspace:
+    name: Build, lint, and test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check formatting
+        run: |
+          cargo +nightly fmt --check
+      - name: Lint
+        run: make lint
+      - name: Test
+        run: make test
