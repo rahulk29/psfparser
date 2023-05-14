@@ -80,6 +80,7 @@ fn test_sweeps() {
 fn test_to_transient_1() {
     use crate::binary::parse;
     let ast = parse(TRAN_EXAMPLE_PSFBIN_1).unwrap();
+    println!("ast = {ast:#?}");
     let data = TransientData::from_binary(ast);
     assert_eq!(data.signals.len(), 4);
     assert_eq!(

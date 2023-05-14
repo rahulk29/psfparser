@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use float_eq::float_eq;
-
 use crate::ascii::ast::{PsfAst as AsciiAst, Trace, Values};
 use crate::bin_search_before;
 use crate::binary::ast::PsfAst as BinaryAst;
+use float_eq::float_eq;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransientData {

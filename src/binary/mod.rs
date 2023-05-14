@@ -36,7 +36,6 @@ impl<'a> PsfParser<'a> {
 
     pub fn parse(&mut self) {
         self.parse_toc();
-        println!("toc = {:?}", self.toc.as_ref().unwrap());
         self.parse_header();
         self.parse_types();
         self.parse_sweeps();
@@ -115,12 +114,11 @@ impl<'a> PsfParser<'a> {
             (data, block_t) = parse_int(data);
             assert_eq!(block_t, 16, "incorrect block type");
             (data, block_init) = parse_int(data);
-            let window_left = block_init >> 16;
+            let _window_left = block_init >> 16;
             let window_count = block_init & 0xffff;
 
             let swp_sig = &self.ast.sweeps[0];
             let swp_name = swp_sig.name;
-            println!("Window: count = {window_count}, left = {window_left}, curr count = {count}, num_traces = {num_traces}, total = {sweep_points}");
             let swp_vec = self
                 .ast
                 .values
@@ -138,7 +136,6 @@ impl<'a> PsfParser<'a> {
             for group in self.ast.traces.iter() {
                 for sig in group.group().signals.iter() {
                     let offset = self.offsets[&sig.id];
-                    println!("sig = {}, offset = {offset}, window size = {window_size}, window_count = {window_count}, rem = {}", sig.name, data.len());
                     let data_len = window_count * 8;
                     let idx = if data_len > window_size as u32 {
                         offset as usize

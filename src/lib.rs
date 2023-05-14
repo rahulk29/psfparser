@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 pub mod analysis;
 pub mod ascii;
 pub mod binary;
+
 #[cfg(test)]
 mod tests;
 
