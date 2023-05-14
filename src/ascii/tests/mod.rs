@@ -62,17 +62,22 @@ fn basic() {
     )
 }
 
-static TRAN_EXAMPLE1_PSF: &str = include_str!(concat!(
+pub(crate) static TRAN_EXAMPLE1_PSF: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/examples/timeSweep1.tran.tran"
 ));
 
-static TRAN_EXAMPLE2_PSF: &str = include_str!(concat!(
+pub(crate) static TRAN_EXAMPLE2_PSF: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/examples/timeSweep2.tran.tran"
 ));
 
-static AC_EXAMPLE_PSF: &str = include_str!(concat!(
+pub(crate) static VDIV_SIN_PSF: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/examples/vdiv_sin_ascii.tran.tran"
+));
+
+pub(crate) static AC_EXAMPLE_PSF: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/examples/frequencySweep.ac"
 ));
@@ -95,6 +100,19 @@ fn parses_transient_2() {
     let ast = parse(TRAN_EXAMPLE2_PSF).expect("Failed to parse transient PSF file");
     let data = TransientData::from_ascii(&ast);
     assert_eq!(data.signals.len(), 41);
+}
+
+#[test]
+fn parses_vdiv_sin_ascii() {
+    let ast = parse(VDIV_SIN_PSF).expect("Failed to parse transient PSF file");
+    let data = TransientData::from_ascii(&ast);
+    assert_eq!(data.signals.len(), 4);
+    assert_eq!(
+        data.signal("time")
+            .expect("should contain a time signal")
+            .len(),
+        16001
+    );
 }
 
 #[test]

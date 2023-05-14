@@ -3,13 +3,42 @@ use std::collections::HashMap;
 use crate::ascii::ast::{PsfAst as AsciiAst, Trace, Values};
 use crate::bin_search_before;
 use crate::binary::ast::PsfAst as BinaryAst;
+use float_eq::float_eq;
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct TransientData {
     pub signals: HashMap<String, Vec<f64>>,
     pub time: String,
 }
 
 impl TransientData {
+    pub fn approx_eq(&self, other: &Self, reltol: f64) -> bool {
+        for (name, sig) in self.signals.iter() {
+            let osig = match other.signal(name) {
+                Some(s) => s,
+                _ => return false,
+            };
+
+            if sig.len() != osig.len() {
+                return false;
+            }
+
+            for (x1, x2) in sig.iter().zip(osig.iter()) {
+                if !float_eq!(x1, x2, r2nd <= reltol) {
+                    return false;
+                }
+            }
+        }
+
+        for name in other.signals.keys() {
+            if self.signal(name).is_none() {
+                return false;
+            }
+        }
+
+        true
+    }
+
     pub fn from_binary(mut ast: BinaryAst) -> Self {
         let mut signals = HashMap::new();
         for trace in ast.traces.iter() {

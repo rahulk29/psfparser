@@ -1,4 +1,7 @@
 pub mod ast;
 pub mod frontend;
+
+pub use frontend::parse;
+
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

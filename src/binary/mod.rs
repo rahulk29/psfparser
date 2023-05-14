@@ -5,7 +5,7 @@ use self::ast::*;
 pub mod ast;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 use crate::Result;
 
@@ -110,12 +110,15 @@ impl<'a> PsfParser<'a> {
         let mut count = 0;
         while count < sweep_points {
             let block_init;
+            let block_t;
+            (data, block_t) = parse_int(data);
+            assert_eq!(block_t, 16, "incorrect block type");
             (data, block_init) = parse_int(data);
+            let _window_left = block_init >> 16;
             let window_count = block_init & 0xffff;
 
             let swp_sig = &self.ast.sweeps[0];
             let swp_name = swp_sig.name;
-            println!("swp_name = {swp_name}");
             let swp_vec = self
                 .ast
                 .values
@@ -132,8 +135,13 @@ impl<'a> PsfParser<'a> {
 
             for group in self.ast.traces.iter() {
                 for sig in group.group().signals.iter() {
-                    let idx =
-                        (self.offsets[&sig.id] + (window_size as u32 - window_count * 8)) as usize;
+                    let offset = self.offsets[&sig.id];
+                    let data_len = window_count * 8;
+                    let idx = if data_len > window_size as u32 {
+                        offset as usize
+                    } else {
+                        (offset + (window_size as u32 - window_count * 8)) as usize
+                    };
                     let data_type = self.ast.types.types[&sig.type_id].data_type;
                     let mut databuf = &data[idx..];
 
@@ -226,7 +234,7 @@ fn parse_toc(data: &[u8]) -> Toc {
 
 fn parse_zero_pad(data: &[u8]) -> &[u8] {
     let (data, len) = parse_int(data);
-    &data[4 + len as usize..]
+    &data[len as usize..]
 }
 
 fn parse_sweeps<'a>(file: &'a [u8], entry: &TocEntry) -> Vec<SignalRef<'a>> {

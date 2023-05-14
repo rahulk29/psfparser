@@ -4,6 +4,9 @@ pub mod analysis;
 pub mod ascii;
 pub mod binary;
 
+#[cfg(test)]
+mod tests;
+
 pub type Result<T> = anyhow::Result<T>;
 
 extern crate pest;
