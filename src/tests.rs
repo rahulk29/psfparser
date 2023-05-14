@@ -3,7 +3,7 @@ use crate::ascii::parse as ascii_parse;
 use crate::ascii::tests::VDIV_SIN_PSF;
 use crate::binary::parse as bin_parse;
 
-use crate::binary::tests::{self, VDIV_SIN_PSFBIN};
+use crate::binary::tests::VDIV_SIN_PSFBIN;
 
 #[test]
 fn parses_vdiv_sin() {

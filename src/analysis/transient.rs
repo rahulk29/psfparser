@@ -15,7 +15,7 @@ pub struct TransientData {
 impl TransientData {
     pub fn approx_eq(&self, other: &Self, reltol: f64) -> bool {
         for (name, sig) in self.signals.iter() {
-            let osig = match other.signal(&name) {
+            let osig = match other.signal(name) {
                 Some(s) => s,
                 _ => return false,
             };
@@ -32,7 +32,7 @@ impl TransientData {
         }
 
         for name in other.signals.keys() {
-            if self.signal(&name).is_none() {
+            if self.signal(name).is_none() {
                 return false;
             }
         }
