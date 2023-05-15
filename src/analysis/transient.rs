@@ -17,24 +17,16 @@ impl TransientData {
             let osig = match other.signal(name) {
                 Some(s) => s,
                 _ => {
-                    println!("Signal {name} not found in other");
                     return false;
                 }
             };
 
             if sig.len() != osig.len() {
-                println!(
-                    "Signal {} had mismatched length: {} vs {}",
-                    name,
-                    sig.len(),
-                    osig.len()
-                );
                 return false;
             }
 
             for (x1, x2) in sig.iter().zip(osig.iter()) {
                 if !float_eq!(x1, x2, r2nd <= reltol) {
-                    println!("Signal {} had mismatched values: {x1} vs {x2}", name);
                     return false;
                 }
             }
@@ -42,7 +34,6 @@ impl TransientData {
 
         for name in other.signals.keys() {
             if self.signal(name).is_none() {
-                println!("Signal {name} not found in self");
                 return false;
             }
         }

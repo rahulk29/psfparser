@@ -88,15 +88,11 @@ impl<'a> PsfParser<'a> {
             "Binary PSF parser only supports windowed PSF files"
         );
         let entry = self.toc().section(SectionKind::Value);
-        println!("Entry: {entry:?}");
         let (data, _eofs) = parse_int(&self.data[entry.start + 4..]);
 
         let window_size = self.window_size();
         let num_traces = self.num_traces();
         let sweep_points = self.sweep_points();
-        println!(
-            "Window size: {window_size}, num traces: {num_traces}, sweep points: {sweep_points}"
-        );
 
         let mut ofs = 0;
         for trace in self.ast.traces.iter() {
@@ -135,12 +131,9 @@ impl<'a> PsfParser<'a> {
                 .or_insert(Values::Real(vec![]));
             let swp_vec = swp_vec.real_mut();
 
-            println!("Window, count = {window_count}");
-
             for _ in 0..window_count {
                 let v;
                 (data, v) = parse_float(data);
-                println!("t = {:.3}", v * 1e9);
                 swp_vec.push(v);
             }
 
