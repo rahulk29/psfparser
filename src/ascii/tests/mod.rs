@@ -77,6 +77,11 @@ pub(crate) static VDIV_SIN_PSF: &str = include_str!(concat!(
     "/examples/vdiv_sin_ascii.tran.tran"
 ));
 
+pub(crate) static SRAM_TINY_PSF: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/examples/sram_tiny_ascii.tran.tran"
+));
+
 pub(crate) static AC_EXAMPLE_PSF: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/examples/frequencySweep.ac"

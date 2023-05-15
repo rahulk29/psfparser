@@ -110,9 +110,13 @@ impl<'a> PsfParser<'a> {
         let mut count = 0;
         while count < sweep_points {
             let block_init;
-            let block_t;
+            let mut block_t;
             (data, block_t) = parse_int(data);
-            assert_eq!(block_t, 16, "incorrect block type");
+            if block_t == 20 {
+                data = parse_zero_pad(data);
+                (data, block_t) = parse_int(data);
+            }
+            assert_eq!(block_t, 16);
             (data, block_init) = parse_int(data);
             let _window_left = block_init >> 16;
             let window_count = block_init & 0xffff;
@@ -140,7 +144,7 @@ impl<'a> PsfParser<'a> {
                     let idx = if data_len > window_size as u32 {
                         offset as usize
                     } else {
-                        (offset + (window_size as u32 - window_count * 8)) as usize
+                        (offset + (window_size as u32 - data_len)) as usize
                     };
                     let data_type = self.ast.types.types[&sig.type_id].data_type;
                     let mut databuf = &data[idx..];

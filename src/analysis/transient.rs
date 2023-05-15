@@ -16,7 +16,9 @@ impl TransientData {
         for (name, sig) in self.signals.iter() {
             let osig = match other.signal(name) {
                 Some(s) => s,
-                _ => return false,
+                _ => {
+                    return false;
+                }
             };
 
             if sig.len() != osig.len() {
