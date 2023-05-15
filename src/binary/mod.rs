@@ -88,11 +88,15 @@ impl<'a> PsfParser<'a> {
             "Binary PSF parser only supports windowed PSF files"
         );
         let entry = self.toc().section(SectionKind::Value);
+        println!("Entry: {entry:?}");
         let (data, _eofs) = parse_int(&self.data[entry.start + 4..]);
 
         let window_size = self.window_size();
         let num_traces = self.num_traces();
         let sweep_points = self.sweep_points();
+        println!(
+            "Window size: {window_size}, num traces: {num_traces}, sweep points: {sweep_points}"
+        );
 
         let mut ofs = 0;
         for trace in self.ast.traces.iter() {
@@ -110,8 +114,13 @@ impl<'a> PsfParser<'a> {
         let mut count = 0;
         while count < sweep_points {
             let block_init;
-            let _block_t;
-            (data, _block_t) = parse_int(data);
+            let mut block_t;
+            (data, block_t) = parse_int(data);
+            if block_t == 20 {
+                data = parse_zero_pad(data);
+                (data, block_t) = parse_int(data);
+            }
+            assert_eq!(block_t, 16);
             (data, block_init) = parse_int(data);
             let _window_left = block_init >> 16;
             let window_count = block_init & 0xffff;
@@ -126,9 +135,12 @@ impl<'a> PsfParser<'a> {
                 .or_insert(Values::Real(vec![]));
             let swp_vec = swp_vec.real_mut();
 
+            println!("Window, count = {window_count}");
+
             for _ in 0..window_count {
                 let v;
                 (data, v) = parse_float(data);
+                println!("t = {:.3}", v * 1e9);
                 swp_vec.push(v);
             }
 
@@ -139,7 +151,7 @@ impl<'a> PsfParser<'a> {
                     let idx = if data_len > window_size as u32 {
                         offset as usize
                     } else {
-                        (offset + (window_size as u32 - window_count * 8)) as usize
+                        (offset + (window_size as u32 - data_len)) as usize
                     };
                     let data_type = self.ast.types.types[&sig.type_id].data_type;
                     let mut databuf = &data[idx..];

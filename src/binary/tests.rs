@@ -120,6 +120,6 @@ fn parses_sram_tiny_bin() {
         data.signal("time")
             .expect("should contain a time signal")
             .len(),
-        781
+        201
     );
 }
