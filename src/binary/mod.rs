@@ -226,8 +226,7 @@ fn parse_toc(data: &[u8]) -> Toc {
         toc.data.insert(kind, entry);
 
         if let Some(pkind) = pkind {
-            let mut ps = toc.data.get_mut(&pkind).unwrap();
-            ps.end = ofs;
+            toc.data.get_mut(&pkind).unwrap().end = ofs;
         }
 
         pkind = Some(kind);
