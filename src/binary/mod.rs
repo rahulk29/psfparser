@@ -15,6 +15,7 @@ pub fn parse(input: &[u8]) -> Result<PsfAst> {
     Ok(parser.into_inner())
 }
 
+#[derive(Debug)]
 pub struct PsfParser<'a> {
     data: &'a [u8],
     toc: Option<Toc>,
@@ -83,109 +84,165 @@ impl<'a> PsfParser<'a> {
     }
 
     fn parse_values(&mut self) {
-        assert!(
-            self.windowed(),
-            "Binary PSF parser only supports windowed PSF files"
-        );
+        println!("partial ast = {self:?}");
         let entry = self.toc().section(SectionKind::Value);
         let (data, _eofs) = parse_int(&self.data[entry.start + 4..]);
 
-        let window_size = self.window_size();
-        let num_traces = self.num_traces();
-        let sweep_points = self.sweep_points();
+        if self.windowed() {
+            let window_size = self.window_size();
+            let num_traces = self.num_traces();
+            let sweep_points = self.sweep_points();
 
-        let mut ofs = 0;
-        for trace in self.ast.traces.iter() {
-            for signal in trace.group().signals.iter() {
-                self.offsets.insert(signal.id, ofs);
-                ofs += window_size as u32;
-            }
-        }
-
-        let (data, block_t) = parse_int(data);
-        assert_eq!(block_t, 20);
-        let data = parse_zero_pad(data);
-
-        let mut data = data;
-        let mut count = 0;
-        while count < sweep_points {
-            let block_init;
-            let mut block_t;
-            (data, block_t) = parse_int(data);
-            if block_t == 20 {
-                data = parse_zero_pad(data);
-                (data, block_t) = parse_int(data);
-            }
-            assert_eq!(block_t, 16);
-            (data, block_init) = parse_int(data);
-            let _window_left = block_init >> 16;
-            let window_count = block_init & 0xffff;
-
-            let swp_sig = &self.ast.sweeps[0];
-            let swp_name = swp_sig.name;
-            let swp_vec = self
-                .ast
-                .values
-                .values
-                .entry(swp_sig.id)
-                .or_insert(Values::Real(vec![]));
-            let swp_vec = swp_vec.real_mut();
-
-            for _ in 0..window_count {
-                let v;
-                (data, v) = parse_float(data);
-                swp_vec.push(v);
-            }
-
-            for group in self.ast.traces.iter() {
-                for sig in group.group().signals.iter() {
-                    let offset = self.offsets[&sig.id];
-                    let data_len = window_count * 8;
-                    let idx = if data_len > window_size as u32 {
-                        offset as usize
-                    } else {
-                        (offset + (window_size as u32 - data_len)) as usize
-                    };
-                    let data_type = self.ast.types.types[&sig.type_id].data_type;
-                    let mut databuf = &data[idx..];
-
-                    assert_ne!(swp_name, sig.name);
-
-                    match data_type {
-                        DataType::Real => {
-                            let values = self
-                                .ast
-                                .values
-                                .values
-                                .entry(sig.id)
-                                .or_insert(Values::Real(vec![]));
-                            let values = values.real_mut();
-                            for _ in 0..window_count {
-                                let v = read_f64(&mut databuf);
-                                values.push(v);
-                            }
-                        }
-                        DataType::Complex => {
-                            let values = self
-                                .ast
-                                .values
-                                .values
-                                .entry(sig.id)
-                                .or_insert(Values::Complex(vec![]));
-                            let values = values.complex_mut();
-                            for _ in 0..window_count {
-                                let real = read_f64(&mut databuf);
-                                let imag = read_f64(&mut databuf);
-                                values.push((real, imag));
-                            }
-                        }
-                        _ => panic!("Unsupported data type: {data_type:?}"),
-                    };
+            let mut ofs = 0;
+            for trace in self.ast.traces.iter() {
+                for signal in trace.group().signals.iter() {
+                    self.offsets.insert(signal.id, ofs);
+                    ofs += window_size as u32;
                 }
             }
 
-            data = &data[(num_traces * window_size) as usize..];
-            count += window_count as i64;
+            let (data, block_t) = parse_int(data);
+            assert_eq!(block_t, 20);
+            let data = parse_zero_pad(data);
+
+            let mut data = data;
+            let mut count = 0;
+            while count < sweep_points {
+                let block_init;
+                let mut block_t;
+                (data, block_t) = parse_int(data);
+                if block_t == 20 {
+                    data = parse_zero_pad(data);
+                    (data, block_t) = parse_int(data);
+                }
+                assert_eq!(block_t, 16);
+                (data, block_init) = parse_int(data);
+                let _window_left = block_init >> 16;
+                let window_count = block_init & 0xffff;
+
+                let swp_sig = &self.ast.sweeps[0];
+                let swp_name = swp_sig.name;
+                let swp_vec = self
+                    .ast
+                    .values
+                    .values
+                    .entry(swp_sig.id)
+                    .or_insert(Values::Real(vec![]));
+                let swp_vec = swp_vec.real_mut();
+
+                for _ in 0..window_count {
+                    let v;
+                    (data, v) = parse_float(data);
+                    swp_vec.push(v);
+                }
+
+                for group in self.ast.traces.iter() {
+                    for sig in group.group().signals.iter() {
+                        let offset = self.offsets[&sig.id];
+                        let data_len = window_count * 8;
+                        let idx = if data_len > window_size as u32 {
+                            offset as usize
+                        } else {
+                            (offset + (window_size as u32 - data_len)) as usize
+                        };
+                        let data_type = self.ast.types.types[&sig.type_id].data_type;
+                        let mut databuf = &data[idx..];
+
+                        assert_ne!(swp_name, sig.name);
+
+                        match data_type {
+                            DataType::Real => {
+                                let values = self
+                                    .ast
+                                    .values
+                                    .values
+                                    .entry(sig.id)
+                                    .or_insert(Values::Real(vec![]));
+                                let values = values.real_mut();
+                                for _ in 0..window_count {
+                                    let v = read_f64(&mut databuf);
+                                    values.push(v);
+                                }
+                            }
+                            DataType::Complex => {
+                                let values = self
+                                    .ast
+                                    .values
+                                    .values
+                                    .entry(sig.id)
+                                    .or_insert(Values::Complex(vec![]));
+                                let values = values.complex_mut();
+                                for _ in 0..window_count {
+                                    let real = read_f64(&mut databuf);
+                                    let imag = read_f64(&mut databuf);
+                                    values.push((real, imag));
+                                }
+                            }
+                            _ => panic!("Unsupported data type: {data_type:?}"),
+                        };
+                    }
+                }
+
+                data = &data[(num_traces * window_size) as usize..];
+                count += window_count as i64;
+            }
+        } else {
+            let sweep_points = self.sweep_points();
+
+            let mut data = data;
+            for _ in 0..sweep_points {
+                data = parse_int(data).0;
+                data = parse_int(data).0; // parameter type
+                let v = read_f64(&mut data);
+                let swp_sig = &self.ast.sweeps[0];
+                let swp_name = swp_sig.name;
+                let swp_vec = self
+                    .ast
+                    .values
+                    .values
+                    .entry(swp_sig.id)
+                    .or_insert(Values::Real(vec![]));
+                let swp_vec = swp_vec.real_mut();
+                swp_vec.push(v);
+
+                for group in self.ast.traces.iter() {
+                    for sig in group.signals() {
+                        // Discard 8 bytes of data.
+                        // Not sure what ths PSF format uses this field for.
+                        let _ = read_f64(&mut data);
+                        let data_type = self.ast.types.types[&sig.type_id].data_type;
+
+                        assert_ne!(swp_name, sig.name);
+
+                        match data_type {
+                            DataType::Real => {
+                                let values = self
+                                    .ast
+                                    .values
+                                    .values
+                                    .entry(sig.id)
+                                    .or_insert(Values::Real(vec![]));
+                                let values = values.real_mut();
+                                let v = read_f64(&mut data);
+                                values.push(v);
+                            }
+                            DataType::Complex => {
+                                let values = self
+                                    .ast
+                                    .values
+                                    .values
+                                    .entry(sig.id)
+                                    .or_insert(Values::Complex(vec![]));
+                                let values = values.complex_mut();
+                                let real = read_f64(&mut data);
+                                let imag = read_f64(&mut data);
+                                values.push((real, imag));
+                            }
+                            _ => panic!("Unsupported data type: {data_type:?}"),
+                        };
+                    }
+                }
+            }
         }
     }
 

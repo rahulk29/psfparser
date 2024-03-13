@@ -153,6 +153,13 @@ impl<'a> Trace<'a> {
             _ => panic!("Cannot unwrap group trace as signal"),
         }
     }
+
+    pub fn signals(&self) -> Box<dyn Iterator<Item = &SignalRef<'a>> + '_> {
+        match self {
+            Trace::Group(group) => Box::new(group.signals.iter()),
+            Trace::Signal(sig) => Box::new(std::iter::once(sig)),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

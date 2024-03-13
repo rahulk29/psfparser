@@ -123,7 +123,7 @@ fn parses_vdiv_sin_ascii() {
 #[test]
 fn parses_ac() {
     let ast = parse(AC_EXAMPLE_PSF).expect("Failed to parse ac PSF file");
-    let data = AcData::from_ast(&ast);
+    let data = AcData::from_ascii(&ast);
     assert_eq!(data.signals.len(), 3);
     assert_eq!(data.freq.len(), 13);
 }

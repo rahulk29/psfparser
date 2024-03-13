@@ -9,7 +9,7 @@ pub struct AcData {
 }
 
 impl AcData {
-    pub fn from_ast(ast: &PsfAst) -> Self {
+    pub fn from_ascii(ast: &PsfAst) -> Self {
         // Assume all groups have count = 1
         // group name -> signal name
         let mut groups = HashMap::<&str, &str>::new();
@@ -56,6 +56,36 @@ impl AcData {
                 panic!("Expected complex signal values; found real");
             }
         }
+
+        Self { signals, freq }
+    }
+
+    pub fn from_binary(mut ast: crate::binary::ast::PsfAst) -> Self {
+        println!("{ast:#?}");
+        // Assume all groups have count = 1
+        // group name -> signal name
+        let mut signals = HashMap::<String, Vec<(f64, f64)>>::new();
+        for group in ast.traces.iter() {
+            for sig in group.signals() {
+                let v = ast
+                    .values
+                    .values
+                    .remove(&sig.id)
+                    .expect("missing values for trace");
+                signals.insert(sig.name.to_string(), v.unwrap_complex());
+            }
+        }
+
+        assert_eq!(
+            ast.sweeps[0].name, "freq",
+            "ac analysis expects to sweep frequency"
+        );
+        let freq = ast
+            .values
+            .values
+            .remove(&ast.sweeps[0].id)
+            .unwrap()
+            .unwrap_real();
 
         Self { signals, freq }
     }
