@@ -1,3 +1,4 @@
+use num::complex::Complex64;
 use std::collections::HashMap;
 
 use self::ast::*;
@@ -174,7 +175,7 @@ impl<'a> PsfParser<'a> {
                                 for _ in 0..window_count {
                                     let real = read_f64(&mut databuf);
                                     let imag = read_f64(&mut databuf);
-                                    values.push((real, imag));
+                                    values.push(Complex64::new(real, imag));
                                 }
                             }
                             _ => panic!("Unsupported data type: {data_type:?}"),
@@ -235,7 +236,7 @@ impl<'a> PsfParser<'a> {
                                 let values = values.complex_mut();
                                 let real = read_f64(&mut data);
                                 let imag = read_f64(&mut data);
-                                values.push((real, imag));
+                                values.push(Complex64::new(real, imag));
                             }
                             _ => panic!("Unsupported data type: {data_type:?}"),
                         };

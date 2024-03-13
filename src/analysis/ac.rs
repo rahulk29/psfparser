@@ -1,10 +1,11 @@
+use num::complex::Complex64;
 use std::collections::HashMap;
 
 use crate::ascii::ast::{PsfAst, Trace, Values};
 use crate::bin_search_before;
 
 pub struct AcData {
-    pub signals: HashMap<String, Vec<(f64, f64)>>,
+    pub signals: HashMap<String, Vec<Complex64>>,
     pub freq: Vec<f64>,
 }
 
@@ -35,7 +36,7 @@ impl AcData {
             }
         }
 
-        let mut signals = HashMap::<String, Vec<(f64, f64)>>::new();
+        let mut signals = HashMap::<String, Vec<Complex64>>::new();
         let mut freq = Vec::<f64>::new();
         for v in ast.values.iter() {
             if v.signal == "freq" {
@@ -61,7 +62,7 @@ impl AcData {
     }
 
     pub fn from_binary(mut ast: crate::binary::ast::PsfAst) -> Self {
-        let mut signals = HashMap::<String, Vec<(f64, f64)>>::new();
+        let mut signals = HashMap::<String, Vec<Complex64>>::new();
         for group in ast.traces.iter() {
             for sig in group.signals() {
                 let v = ast
@@ -94,7 +95,7 @@ impl AcData {
     }
 
     #[inline]
-    pub fn signal(&self, name: &str) -> Option<&Vec<(f64, f64)>> {
+    pub fn signal(&self, name: &str) -> Option<&Vec<Complex64>> {
         self.signals.get(name)
     }
 }

@@ -1,3 +1,4 @@
+use num::complex::Complex64;
 use std::collections::HashMap;
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -195,7 +196,7 @@ pub struct SignalValues {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Values {
-    Complex(Vec<(f64, f64)>),
+    Complex(Vec<Complex64>),
     Real(Vec<f64>),
 }
 
@@ -207,7 +208,7 @@ impl Values {
         }
     }
 
-    pub fn unwrap_complex(self) -> Vec<(f64, f64)> {
+    pub fn unwrap_complex(self) -> Vec<Complex64> {
         match self {
             Self::Complex(v) => v,
             _ => panic!("not a complex value vector"),
@@ -221,7 +222,7 @@ impl Values {
         }
     }
 
-    pub fn complex(&self) -> &Vec<(f64, f64)> {
+    pub fn complex(&self) -> &Vec<Complex64> {
         match self {
             Self::Complex(ref v) => v,
             _ => panic!("not a complex value vector"),
@@ -235,7 +236,7 @@ impl Values {
         }
     }
 
-    pub fn complex_mut(&mut self) -> &mut Vec<(f64, f64)> {
+    pub fn complex_mut(&mut self) -> &mut Vec<Complex64> {
         match self {
             Self::Complex(ref mut v) => v,
             _ => panic!("not a complex value vector"),
