@@ -1,3 +1,4 @@
+use crate::analysis::ac::AcData;
 use crate::analysis::transient::TransientData;
 
 use super::*;
@@ -16,6 +17,9 @@ pub(crate) static SRAM_TINY_PSFBIN: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/examples/sram_tiny_bin.tran.tran"
 ));
+
+pub(crate) static AC_ZOUT_PSFBIN: &[u8] =
+    include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/examples/AcZout.ac"));
 
 #[test]
 fn test_header() {
@@ -122,4 +126,12 @@ fn parses_sram_tiny_bin() {
             .len(),
         201
     );
+}
+
+#[test]
+fn parses_ac() {
+    let ast = parse(AC_ZOUT_PSFBIN).expect("Failed to parse ac PSF file");
+    let data = AcData::from_binary(ast);
+    assert_eq!(data.signals.len(), 2);
+    assert_eq!(data.freq.len(), 78);
 }

@@ -1,3 +1,4 @@
+use num::complex::Complex64;
 use pest::iterators::Pair;
 use pest::Parser;
 
@@ -256,7 +257,7 @@ fn parse_simple_numbers(input: Pair<Rule>) -> Result<Vec<f64>> {
     pairs.map(parse_real).collect::<Result<Vec<_>>>()
 }
 
-fn parse_complex_numbers(input: Pair<Rule>) -> Result<Vec<(f64, f64)>> {
+fn parse_complex_numbers(input: Pair<Rule>) -> Result<Vec<Complex64>> {
     debug_assert_eq!(input.as_rule(), Rule::composite_numbers);
     let pairs = input.into_inner().next().unwrap().into_inner();
     let numbers = pairs
@@ -270,7 +271,7 @@ fn parse_complex_numbers(input: Pair<Rule>) -> Result<Vec<(f64, f64)>> {
                 2,
                 "complex numbers should have exactly two entries"
             );
-            (number[0], number[1])
+            Complex64::new(number[0], number[1])
         })
         .collect())
 }

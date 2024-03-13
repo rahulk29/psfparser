@@ -1,3 +1,5 @@
+use num::complex::Complex64;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct PsfAst<'a> {
     pub header: Header<'a>,
@@ -74,6 +76,6 @@ pub struct SignalValues<'a> {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Values {
-    Complex(Vec<(f64, f64)>),
+    Complex(Vec<Complex64>),
     Real(Vec<f64>),
 }
