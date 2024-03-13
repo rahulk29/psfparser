@@ -61,9 +61,6 @@ impl AcData {
     }
 
     pub fn from_binary(mut ast: crate::binary::ast::PsfAst) -> Self {
-        println!("{ast:#?}");
-        // Assume all groups have count = 1
-        // group name -> signal name
         let mut signals = HashMap::<String, Vec<(f64, f64)>>::new();
         for group in ast.traces.iter() {
             for sig in group.signals() {

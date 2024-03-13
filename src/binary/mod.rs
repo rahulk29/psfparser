@@ -84,7 +84,6 @@ impl<'a> PsfParser<'a> {
     }
 
     fn parse_values(&mut self) {
-        println!("partial ast = {self:?}");
         let entry = self.toc().section(SectionKind::Value);
         let (data, _eofs) = parse_int(&self.data[entry.start + 4..]);
 
