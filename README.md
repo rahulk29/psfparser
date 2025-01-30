@@ -1,5 +1,10 @@
 # psfparser
 
+**Update: psfparser has moved!
+It is now a member of the [substrate2](https://github.com/ucb-substrate/substrate2) repository.
+Future development will occur there.
+**
+
 A PSF reader written in Rust.
 This crate provides support for parsing PSF waveform files,
 in both ASCII and binary format.
